@@ -1,0 +1,22 @@
+From ab428b9a1dfafa234dbfe84ebd50928f861057e9 Mon Sep 17 00:00:00 2001
+From: Vincent Rabaud <vrabaud@willowgarage.com>
+Date: Wed, 27 Feb 2013 10:54:11 -0800
+Subject: [PATCH 1/2] Added install rule for package.xml
+
+---
+ CMakeLists.txt |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6a649f9..ded2b45 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -864,3 +864,5 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+   message(WARNING "The source directory is the same as binary directory. \"make clean\" may damage the source tree")
+ endif()
+ 
++# Install catkin package.xml
++install(FILES package.xml DESTINATION share/opencv2)
+-- 
+1.7.9.5
+
