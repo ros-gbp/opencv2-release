@@ -1,7 +1,7 @@
 From 57c6d43cae5e0573f9f2851a6aeb84b92f5a923c Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:08:32 -0800
-Subject: [PATCH 3/3] fix the template for pkgconfig
+Subject: [PATCH 3/4] fix the template for pkgconfig
 
 ---
  cmake/templates/opencv-XXX.pc.cmake.in |    3 ++-

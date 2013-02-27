@@ -1,7 +1,7 @@
 From b9055acd8d06ab39cb3776921a2537969d8640c9 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:04:13 -0800
-Subject: [PATCH 2/3] remove automatic include_directories
+Subject: [PATCH 2/4] remove automatic include_directories
 
 ---
  cmake/templates/OpenCVConfig.cmake.in |    1 -
