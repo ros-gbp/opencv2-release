@@ -1,0 +1,24 @@
+From 57c6d43cae5e0573f9f2851a6aeb84b92f5a923c Mon Sep 17 00:00:00 2001
+From: Vincent Rabaud <vrabaud@willowgarage.com>
+Date: Wed, 27 Feb 2013 11:08:32 -0800
+Subject: [PATCH 3/3] fix the template for pkgconfig
+
+---
+ cmake/templates/opencv-XXX.pc.cmake.in |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/cmake/templates/opencv-XXX.pc.cmake.in b/cmake/templates/opencv-XXX.pc.cmake.in
+index 4f6415c..af0dad3 100644
+--- a/cmake/templates/opencv-XXX.pc.cmake.in
++++ b/cmake/templates/opencv-XXX.pc.cmake.in
+@@ -9,5 +9,6 @@ includedir_new=@includedir@
+ Name: OpenCV
+ Description: Open Source Computer Vision Library
+ Version: @VERSION@
+-Libs: @OpenCV_LIB_COMPONENTS@
++Libs: -L${exec_prefix}/lib -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_gpu -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_nonfree -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_ts -lopencv_video -lopencv_videostab
+ Cflags: -I${includedir_old} -I${includedir_new}
++
+-- 
+1.7.9.5
+
