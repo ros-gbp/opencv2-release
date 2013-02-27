@@ -10,10 +10,10 @@ tracks:
       -i :{release_inc}
     devel_branch: '2.4'
     name: upstream
-    patches: null
+    patches: groovy
     release_inc: -1
     release_tag: :{version}
     ros_distro: groovy
     vcs_type: git
     vcs_uri: https://github.com/Itseez/opencv.git
-    version: :{auto}
+    version: :{ask}
