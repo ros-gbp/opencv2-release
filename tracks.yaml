@@ -12,7 +12,7 @@ tracks:
     name: upstream
     patches: groovy
     release_inc: -1
-    release_tag: :{version}
+    release_tag: :{ask}
     ros_distro: groovy
     vcs_type: git
     vcs_uri: https://github.com/Itseez/opencv.git
