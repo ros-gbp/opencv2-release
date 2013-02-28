@@ -1,4 +1,4 @@
-From b1bb93cde92fb2ac387fc8246b9c3f5ecc701b8f Mon Sep 17 00:00:00 2001
+From a5b298163e46279cfed8f35486f8af6f9fc035e3 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:14:45 -0800
 Subject: [PATCH] Customized debian rules file
