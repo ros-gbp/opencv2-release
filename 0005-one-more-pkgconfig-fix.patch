@@ -1,0 +1,24 @@
+From 1fb311436b29db5ace39c53edd3b6a379a15a4a0 Mon Sep 17 00:00:00 2001
+From: Vincent Rabaud <vrabaud@willowgarage.com>
+Date: Thu, 28 Feb 2013 00:26:42 -0800
+Subject: [PATCH 5/5] one more pkgconfig fix
+
+---
+ cmake/OpenCVGenPkgconfig.cmake |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/cmake/OpenCVGenPkgconfig.cmake b/cmake/OpenCVGenPkgconfig.cmake
+index 49d6707..6a11e08 100644
+--- a/cmake/OpenCVGenPkgconfig.cmake
++++ b/cmake/OpenCVGenPkgconfig.cmake
+@@ -69,6 +69,7 @@ else()
+   set(OPENCV_PC_FILE_NAME opencv.pc)
+ endif()
+ configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/opencv-XXX.pc.cmake.in" "${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME}" @ONLY IMMEDIATE)
++configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/opencv-XXX.pc.cmake.in" "${CMAKE_BINARY_DIR}/unix-install/opencv2.pc" @ONLY IMMEDIATE)
+ 
+ if(UNIX AND NOT ANDROID)
+   install(FILES ${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME} DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig)
+-- 
+1.7.9.5
+

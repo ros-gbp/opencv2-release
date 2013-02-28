@@ -1,7 +1,7 @@
-From 775dcb72a60c8fe90be8692a3c3c793602b9c8d9 Mon Sep 17 00:00:00 2001
+From 1060b8f73c01432a69c6dc4f20a0657dabad38fb Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:15:00 -0800
-Subject: [PATCH 4/4] make sure the docs build
+Subject: [PATCH 4/5] make sure the docs build
 
 ---
  doc/CMakeLists.txt |    4 ++--
