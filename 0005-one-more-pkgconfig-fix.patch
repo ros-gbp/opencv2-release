@@ -1,4 +1,4 @@
-From b09063b888c9b5b3c5905f59043096c09da84119 Mon Sep 17 00:00:00 2001
+From 1196cfa78f1a9af851146196b68d8a28c774a50d Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Thu, 28 Feb 2013 00:26:42 -0800
 Subject: [PATCH 5/6] one more pkgconfig fix

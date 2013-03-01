@@ -1,4 +1,4 @@
-From 3cb475399ffce304fc17e5d84bcb08ee9f65554a Mon Sep 17 00:00:00 2001
+From a9f3cb428437a02dce37b5840ba56e4a8711a33f Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Thu, 28 Feb 2013 21:48:42 -0800
 Subject: [PATCH 6/6] install opencv2.pc

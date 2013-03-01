@@ -1,4 +1,4 @@
-From 4402cb085c5d806eda992978855276284468668e Mon Sep 17 00:00:00 2001
+From 917fbe2881e0dd0a6c567acf1ccd641b3671828c Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:04:13 -0800
 Subject: [PATCH 2/6] remove automatic include_directories
@@ -8,7 +8,7 @@ Subject: [PATCH 2/6] remove automatic include_directories
  1 file changed, 1 deletion(-)
 
 diff --git a/cmake/templates/OpenCVConfig.cmake.in b/cmake/templates/OpenCVConfig.cmake.in
-index 235c72b..5120921 100644
+index e285eab..a4bf0c5 100644
 --- a/cmake/templates/OpenCVConfig.cmake.in
 +++ b/cmake/templates/OpenCVConfig.cmake.in
 @@ -81,7 +81,6 @@ set(OpenCV_HAVE_ANDROID_CAMERA @HAVE_opencv_androidcamera@)

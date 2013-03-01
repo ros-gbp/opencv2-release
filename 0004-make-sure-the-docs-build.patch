@@ -1,4 +1,4 @@
-From dd686d7c2e73d0c2d386827321d06b2c7418b791 Mon Sep 17 00:00:00 2001
+From 2bd1d42354d28d68a0cc07de08461e7351db1cce Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:15:00 -0800
 Subject: [PATCH 4/6] make sure the docs build

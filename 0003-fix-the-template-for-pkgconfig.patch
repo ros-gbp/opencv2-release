@@ -1,4 +1,4 @@
-From d92f8aceb9653291fa9c5e9a616b516315646be9 Mon Sep 17 00:00:00 2001
+From 48954dcd4f58fafcd8859e89e4922f2c1adfd794 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:08:32 -0800
 Subject: [PATCH 3/6] fix the template for pkgconfig
