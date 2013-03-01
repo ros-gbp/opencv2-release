@@ -12,7 +12,7 @@ tracks:
     last_version: 2.4.3
     name: upstream
     patches: groovy
-    release_inc: '8'
+    release_inc: '9'
     release_tag: :{ask}
     ros_distro: groovy
     vcs_type: git
