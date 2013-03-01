@@ -81,6 +81,7 @@ set(OpenCV_HAVE_ANDROID_CAMERA @HAVE_opencv_androidcamera@)
 
 # Provide the include directories to the caller
 set(OpenCV_INCLUDE_DIRS @OpenCV_INCLUDE_DIRS_CONFIGCMAKE@)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 # ======================================================
 # Link directories to add to the user project:
@@ -150,6 +151,7 @@ endif()
 # ==============================================================
 if(NOT OpenCV_FIND_COMPONENTS)
   set(OpenCV_FIND_COMPONENTS ${OpenCV_LIB_COMPONENTS})
+  list(REMOVE_ITEM OpenCV_FIND_COMPONENTS opencv_java)
   if(GTest_FOUND OR GTEST_FOUND)
     list(REMOVE_ITEM OpenCV_FIND_COMPONENTS opencv_ts)
   endif()
@@ -220,7 +222,7 @@ foreach(__opttype OPT DBG)
   endif()
 
   # CUDA
-  if(OpenCV_CUDA_VERSION AND WIN32 AND NOT OpenCV_SHARED)
+  if(OpenCV_CUDA_VERSION AND (CMAKE_CROSSCOMPILING OR (WIN32 AND NOT OpenCV_SHARED)))
     if(NOT CUDA_FOUND)
       find_package(CUDA ${OpenCV_CUDA_VERSION} EXACT REQUIRED)
     else()
@@ -303,3 +305,11 @@ else()
   SET(OpenCV_LIB_DIR ${OpenCV_LIB_DIR_OPT} ${OpenCV_3RDPARTY_LIB_DIR_OPT})
 endif()
 set(OpenCV_LIBRARIES ${OpenCV_LIBS})
+
+if(CMAKE_CROSSCOMPILING AND OpenCV_SHARED AND (CMAKE_SYSTEM_NAME MATCHES "Linux"))
+  foreach(dir ${OpenCV_LIB_DIR})
+    set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -Wl,-rpath-link,${dir}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath-link,${dir}")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,-rpath-link,${dir}")
+  endforeach()
+endif()
