@@ -1,7 +1,7 @@
-From 1fb311436b29db5ace39c53edd3b6a379a15a4a0 Mon Sep 17 00:00:00 2001
+From b09063b888c9b5b3c5905f59043096c09da84119 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Thu, 28 Feb 2013 00:26:42 -0800
-Subject: [PATCH 5/5] one more pkgconfig fix
+Subject: [PATCH 5/6] one more pkgconfig fix
 
 ---
  cmake/OpenCVGenPkgconfig.cmake |    1 +
