@@ -1,0 +1,73 @@
+From 3be0acfc8f5a5014e50c9c54b8d933aa8f812812 Mon Sep 17 00:00:00 2001
+From: Vincent Rabaud <vrabaud@willowgarage.com>
+Date: Wed, 13 Mar 2013 10:58:59 -0700
+Subject: [PATCH 2/2] add misc patches from Groovy
+
+---
+ cmake/OpenCVGenPkgconfig.cmake         |    2 ++
+ cmake/templates/OpenCVConfig.cmake.in  |    1 -
+ cmake/templates/opencv-XXX.pc.cmake.in |    3 ++-
+ doc/CMakeLists.txt                     |    4 ++--
+ 4 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/cmake/OpenCVGenPkgconfig.cmake b/cmake/OpenCVGenPkgconfig.cmake
+index 49d6707..3661a8a 100644
+--- a/cmake/OpenCVGenPkgconfig.cmake
++++ b/cmake/OpenCVGenPkgconfig.cmake
+@@ -69,7 +69,9 @@ else()
+   set(OPENCV_PC_FILE_NAME opencv.pc)
+ endif()
+ configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/opencv-XXX.pc.cmake.in" "${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME}" @ONLY IMMEDIATE)
++configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/opencv-XXX.pc.cmake.in" "${CMAKE_BINARY_DIR}/unix-install/opencv2.pc" @ONLY IMMEDIATE)
+ 
+ if(UNIX AND NOT ANDROID)
+   install(FILES ${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME} DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig)
++  install(FILES ${CMAKE_BINARY_DIR}/unix-install/opencv2.pc DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig)
+ endif()
+diff --git a/cmake/templates/OpenCVConfig.cmake.in b/cmake/templates/OpenCVConfig.cmake.in
+index 7441b59..1dcd840 100644
+--- a/cmake/templates/OpenCVConfig.cmake.in
++++ b/cmake/templates/OpenCVConfig.cmake.in
+@@ -81,7 +81,6 @@ set(OpenCV_HAVE_ANDROID_CAMERA @HAVE_opencv_androidcamera@)
+ 
+ # Provide the include directories to the caller
+ set(OpenCV_INCLUDE_DIRS @OpenCV_INCLUDE_DIRS_CONFIGCMAKE@)
+-include_directories(${OpenCV_INCLUDE_DIRS})
+ 
+ # ======================================================
+ # Link directories to add to the user project:
+diff --git a/cmake/templates/opencv-XXX.pc.cmake.in b/cmake/templates/opencv-XXX.pc.cmake.in
+index 4f6415c..af0dad3 100644
+--- a/cmake/templates/opencv-XXX.pc.cmake.in
++++ b/cmake/templates/opencv-XXX.pc.cmake.in
+@@ -9,5 +9,6 @@ includedir_new=@includedir@
+ Name: OpenCV
+ Description: Open Source Computer Vision Library
+ Version: @VERSION@
+-Libs: @OpenCV_LIB_COMPONENTS@
++Libs: -L${exec_prefix}/lib -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_gpu -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_nonfree -lopencv_objdetect -lopencv_photo -lopencv_stitching -lopencv_ts -lopencv_video -lopencv_videostab
+ Cflags: -I${includedir_old} -I${includedir_new}
++
+diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
+index 0f2695f..f9a49c9 100644
+--- a/doc/CMakeLists.txt
++++ b/doc/CMakeLists.txt
+@@ -68,7 +68,7 @@ if(BUILD_DOCS AND HAVE_SPHINX)
+            ${OPENCV_FILES_UG} ${OPENCV_FILES_TUT} ${OPENCV_FILES_TUT_PICT})
+ 
+   if(PDFLATEX_COMPILER)
+-    add_custom_target(docs
++    add_custom_target(docs ALL
+       COMMAND ${SPHINX_BUILD} -b latex -c ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. .
+       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/pics ${CMAKE_CURRENT_BINARY_DIR}/doc/opencv1/pics
+       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/mymath.sty ${CMAKE_CURRENT_BINARY_DIR}
+@@ -122,4 +122,4 @@ if(BUILD_DOCS AND HAVE_SPHINX)
+     install(FILES "${f}" DESTINATION "${OPENCV_DOC_INSTALL_PATH}" OPTIONAL)
+   endforeach()
+ 
+-endif()
+\ No newline at end of file
++endif()
+-- 
+1.7.9.5
+
