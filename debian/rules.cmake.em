@@ -14,26 +14,43 @@ export DH_OPTIONS=-v --buildsystem=cmake
 #  https://code.ros.org/trac/ros/ticket/2977
 #  https://code.ros.org/trac/ros/ticket/3842
 export LDFLAGS=
-export PKG_CONFIG_PATH=/opt/ros/hydro/lib/pkgconfig
+export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
+
+CMAKE_FLAGS = \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DENABLE_SSE=ON \
+        -DENABLE_SSE2=ON \
+        -DENABLE_SSE3=ON \
+        -DENABLE_SSE42=OFF \
+        -DENABLE_SSE41=OFF \
+        -DENABLE_FAST_MATH=OFF \
+        -DBUILD_EXAMPLES=OFF \
+        -DBUILD_DOCS=ON \
+        -DBUILD_PERF_TESTS=OFF \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_NEW_PYTHON_SUPPORT=ON \
+        -DWITH_V4L=ON \
+        -DWITH_CUDA=OFF \
 
 %:
-	dh  $@
+	dh  $@@
 
 override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	if [ -f "/opt/ros/hydro/setup.sh" ]; then . "/opt/ros/hydro/setup.sh"; fi && \
-	dh_auto_configure -- \
-		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
+	dh_auto_configure -Scmake -- \
 		-DCMAKE_INSTALL_PREFIX="/opt/ros/hydro" \
-		-DCMAKE_PREFIX_PATH="/opt/ros/hydro"
+		-DCMAKE_PREFIX_PATH="/opt/ros/hydro" \
+		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
+		$(CMAKE_FLAGS)
 
 override_dh_auto_build:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
-	if [ -f "/opt/ros/hydro/setup.sh" ]; then . "/opt/ros/hydro/setup.sh"; fi && \
+	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_build
 
 override_dh_auto_test:
@@ -41,12 +58,12 @@ override_dh_auto_test:
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
 	echo -- Running tests. Even if one of them fails the build is not canceled.
-	if [ -f "/opt/ros/hydro/setup.sh" ]; then . "/opt/ros/hydro/setup.sh"; fi && \
+	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
 	dh_auto_test || true
 
 override_dh_shlibdeps:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
-	if [ -f "/opt/ros/hydro/setup.sh" ]; then . "/opt/ros/hydro/setup.sh"; fi && \
-	dh_shlibdeps -l$(CURDIR)/debian/ros-hydro-opencv2//opt/ros/hydro/lib/
+	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
+	dh_shlibdeps -l$(CURDIR)/debian/@(Package)/@(InstallationPrefix)/lib/
