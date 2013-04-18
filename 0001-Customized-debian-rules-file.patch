@@ -1,10 +1,10 @@
-From 21aa374758c4f2c1fb2a2b589111621290ffa63f Mon Sep 17 00:00:00 2001
+From 08f165e9599ed611970b8cef3c3abf6e18f7a631 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:14:45 -0800
 Subject: [PATCH] Customized debian rules file
 
 ---
- debian/rules.cmake.em |   25 +++++++++++++++++++++----
+ debian/rules.cmake.em | 25 +++++++++++++++++++++----
  1 file changed, 21 insertions(+), 4 deletions(-)
 
 diff --git a/debian/rules.cmake.em b/debian/rules.cmake.em
@@ -52,5 +52,5 @@ index d45dd5f..339bbe1 100644
  override_dh_auto_build:
  	# In case we're installing to a non-standard location, look for a setup.sh
 -- 
-1.7.9.5
+1.7.12.4 (Apple Git-37)
 
