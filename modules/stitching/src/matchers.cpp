@@ -348,8 +348,15 @@ SurfFeaturesFinder::SurfFeaturesFinder(double hess_thresh, int num_octaves, int 
 void SurfFeaturesFinder::find(const Mat &image, ImageFeatures &features)
 {
     Mat gray_image;
-    CV_Assert(image.type() == CV_8UC3);
-    cvtColor(image, gray_image, CV_BGR2GRAY);
+    CV_Assert((image.type() == CV_8UC3) || (image.type() == CV_8UC1));
+    if(image.type() == CV_8UC3)
+    {
+        cvtColor(image, gray_image, CV_BGR2GRAY);
+    }
+    else
+    {
+        gray_image = image;
+    }
     if (surf == 0)
     {
         detector_->detect(gray_image, features.keypoints);
@@ -429,7 +436,7 @@ void OrbFeaturesFinder::find(const Mat &image, ImageFeatures &features)
     }
 }
 
-#ifdef HAVE_OPENCV_GPU
+#if defined(HAVE_OPENCV_NONFREE) && defined(HAVE_OPENCV_GPU)
 SurfFeaturesFinderGpu::SurfFeaturesFinderGpu(double hess_thresh, int num_octaves, int num_layers,
                                              int num_octaves_descr, int num_layers_descr)
 {

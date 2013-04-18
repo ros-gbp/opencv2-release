@@ -184,7 +184,7 @@ static void finalizeHdr(Mat& m)
 void Mat::create(int d, const int* _sizes, int _type)
 {
     int i;
-    CV_Assert(0 <= d && _sizes && d <= CV_MAX_DIM && _sizes);
+    CV_Assert(0 <= d && d <= CV_MAX_DIM && _sizes);
     _type = CV_MAT_TYPE(_type);
 
     if( data && (d == dims || (d == 1 && dims <= 2)) && _type == type() )
@@ -1546,10 +1546,10 @@ void _OutputArray::create(int dims, const int* sizes, int mtype, int i, bool all
                 int _type = CV_MAT_TYPE(flags);
                 for( size_t j = len0; j < len; j++ )
                 {
-                    if( v[i].type() == _type )
+                    if( v[j].type() == _type )
                         continue;
-                    CV_Assert( v[i].empty() );
-                    v[i].flags = (v[i].flags & ~CV_MAT_TYPE_MASK) | _type;
+                    CV_Assert( v[j].empty() );
+                    v[j].flags = (v[j].flags & ~CV_MAT_TYPE_MASK) | _type;
                 }
             }
             return;
