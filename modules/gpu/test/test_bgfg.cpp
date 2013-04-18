@@ -7,10 +7,11 @@
 //  copy or use the software.
 //
 //
-//                        Intel License Agreement
+//                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2000, Intel Corporation, all rights reserved.
+// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,7 +24,7 @@
 //     this list of conditions and the following disclaimer in the documentation
 //     and/or other materials provided with the distribution.
 //
-//   * The name of Intel Corporation may not be used to endorse or promote products
+//   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
 //
 // This software is provided by the copyright holders and contributors "as is" and
@@ -43,8 +44,24 @@
 
 #ifdef HAVE_CUDA
 
+using namespace cvtest;
+
+#if defined(HAVE_XINE)         || \
+    defined(HAVE_GSTREAMER)    || \
+    defined(HAVE_QUICKTIME)    || \
+    defined(HAVE_AVFOUNDATION) || \
+    defined(HAVE_FFMPEG)       || \
+    defined(WIN32) /* assume that we have ffmpeg */
+
+#  define BUILD_WITH_VIDEO_INPUT_SUPPORT 1
+#else
+#  define BUILD_WITH_VIDEO_INPUT_SUPPORT 0
+#endif
+
 //////////////////////////////////////////////////////
 // FGDStatModel
+
+#if BUILD_WITH_VIDEO_INPUT_SUPPORT
 
 namespace cv
 {
@@ -130,8 +147,12 @@ INSTANTIATE_TEST_CASE_P(GPU_Video, FGDStatModel, testing::Combine(
     testing::Values(std::string("768x576.avi")),
     testing::Values(Channels(3), Channels(4))));
 
+#endif
+
 //////////////////////////////////////////////////////
 // MOG
+
+#if BUILD_WITH_VIDEO_INPUT_SUPPORT
 
 namespace
 {
@@ -204,8 +225,12 @@ INSTANTIATE_TEST_CASE_P(GPU_Video, MOG, testing::Combine(
     testing::Values(LearningRate(0.0), LearningRate(0.01)),
     WHOLE_SUBMAT));
 
+#endif
+
 //////////////////////////////////////////////////////
 // MOG2
+
+#if BUILD_WITH_VIDEO_INPUT_SUPPORT
 
 namespace
 {
@@ -320,46 +345,7 @@ INSTANTIATE_TEST_CASE_P(GPU_Video, MOG2, testing::Combine(
     testing::Values(DetectShadow(true), DetectShadow(false)),
     WHOLE_SUBMAT));
 
-//////////////////////////////////////////////////////
-// VIBE
-
-PARAM_TEST_CASE(VIBE, cv::gpu::DeviceInfo, cv::Size, MatType, UseRoi)
-{
-};
-
-GPU_TEST_P(VIBE, Accuracy)
-{
-    const cv::gpu::DeviceInfo devInfo = GET_PARAM(0);
-    cv::gpu::setDevice(devInfo.deviceID());
-    const cv::Size size = GET_PARAM(1);
-    const int type = GET_PARAM(2);
-    const bool useRoi = GET_PARAM(3);
-
-    const cv::Mat fullfg(size, CV_8UC1, cv::Scalar::all(255));
-
-    cv::Mat frame = randomMat(size, type, 0.0, 100);
-    cv::gpu::GpuMat d_frame = loadMat(frame, useRoi);
-
-    cv::gpu::VIBE_GPU vibe;
-    cv::gpu::GpuMat d_fgmask = createMat(size, CV_8UC1, useRoi);
-    vibe.initialize(d_frame);
-
-    for (int i = 0; i < 20; ++i)
-        vibe(d_frame, d_fgmask);
-
-    frame = randomMat(size, type, 160, 255);
-    d_frame = loadMat(frame, useRoi);
-    vibe(d_frame, d_fgmask);
-
-    // now fgmask should be entirely foreground
-    ASSERT_MAT_NEAR(fullfg, d_fgmask, 0);
-}
-
-INSTANTIATE_TEST_CASE_P(GPU_Video, VIBE, testing::Combine(
-    ALL_DEVICES,
-    DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4)),
-    WHOLE_SUBMAT));
+#endif
 
 //////////////////////////////////////////////////////
 // GMG
