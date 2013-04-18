@@ -69,28 +69,28 @@ namespace cv
 
         enum DevMemRW
         {
-            DEVICE_MEM_R_W = 0, 
-            DEVICE_MEM_R_ONLY, 
+            DEVICE_MEM_R_W = 0,
+            DEVICE_MEM_R_ONLY,
             DEVICE_MEM_W_ONLY
         };
- 
+
         enum DevMemType
-        { 
-            DEVICE_MEM_DEFAULT = 0, 
+        {
+            DEVICE_MEM_DEFAULT = 0,
             DEVICE_MEM_AHP,         //alloc host pointer
             DEVICE_MEM_UHP,         //use host pointer
             DEVICE_MEM_CHP,         //copy host pointer
             DEVICE_MEM_PM           //persistent memory
         };
 
-        //Get the global device memory and read/write type	
+        //Get the global device memory and read/write type
         //return 1 if unified memory system supported, otherwise return 0
         CV_EXPORTS int getDevMemType(DevMemRW& rw_type, DevMemType& mem_type);
 
-        //Set the global device memory and read/write type, 
+        //Set the global device memory and read/write type,
         //the newly generated oclMat will all use this type
         //return -1 if the target type is unsupported, otherwise return 0
-        CV_EXPORTS int setDevMemType(DevMemRW rw_type = DEVICE_MEM_R_W, DevMemType mem_type = DEVICE_MEM_DEFAULT); 
+        CV_EXPORTS int setDevMemType(DevMemRW rw_type = DEVICE_MEM_R_W, DevMemType mem_type = DEVICE_MEM_DEFAULT);
 
         //this class contains ocl runtime information
         class CV_EXPORTS Info
@@ -126,6 +126,9 @@ namespace cv
 
         CV_EXPORTS void* getoclCommandQueue();
 
+        //explicit call clFinish. The global command queue will be used.
+        CV_EXPORTS void finish();
+
         //this function enable ocl module to use customized cl_context and cl_command_queue
         //getDevice also need to be called before this function
         CV_EXPORTS void setDeviceEx(Info &oclinfo, void *ctx, void *qu, int devnum = 0);
@@ -135,20 +138,28 @@ namespace cv
 
         //////////////////////////////// OpenCL context ////////////////////////
         //This is a global singleton class used to represent a OpenCL context.
-        class Context
+        class CV_EXPORTS Context
         {
         protected:
             Context();
             friend class auto_ptr<Context>;
-            static auto_ptr<Context> clCxt;
 
+        private:
+            static auto_ptr<Context> clCxt;
+            static int val;
         public:
             ~Context();
-            static int val;
-            static Context *getContext();
+            void release();
+            Info::Impl* impl;
+
+            static Context* getContext();
             static void setContext(Info &oclinfo);
-            struct Impl;
-            Impl *impl;
+
+            enum {CL_DOUBLE, CL_UNIFIED_MEM};
+            bool supportsFeature(int ftype);
+            size_t computeUnits();
+            void* oclContext();
+            void* oclCommandQueue();
         };
 
         //! Calls a kernel, by string. Pass globalThreads = NULL, and cleanUp = true, to finally clean-up without executing.
@@ -1073,156 +1084,6 @@ namespace cv
         };
 
 
-
-        //! Speeded up robust features, port from GPU module.
-        ////////////////////////////////// SURF //////////////////////////////////////////
-
-        class CV_EXPORTS SURF_OCL
-
-        {
-
-        public:
-
-            enum KeypointLayout
-
-            {
-
-                X_ROW = 0,
-
-                Y_ROW,
-
-                LAPLACIAN_ROW,
-
-                OCTAVE_ROW,
-
-                SIZE_ROW,
-
-                ANGLE_ROW,
-
-                HESSIAN_ROW,
-
-                ROWS_COUNT
-
-            };
-
-
-
-            //! the default constructor
-
-            SURF_OCL();
-
-            //! the full constructor taking all the necessary parameters
-
-            explicit SURF_OCL(double _hessianThreshold, int _nOctaves = 4,
-
-                              int _nOctaveLayers = 2, bool _extended = false, float _keypointsRatio = 0.01f, bool _upright = false);
-
-
-
-            //! returns the descriptor size in float's (64 or 128)
-
-            int descriptorSize() const;
-
-
-
-            //! upload host keypoints to device memory
-
-            void uploadKeypoints(const vector<cv::KeyPoint> &keypoints, oclMat &keypointsocl);
-
-            //! download keypoints from device to host memory
-
-            void downloadKeypoints(const oclMat &keypointsocl, vector<KeyPoint> &keypoints);
-
-
-
-            //! download descriptors from device to host memory
-
-            void downloadDescriptors(const oclMat &descriptorsocl, vector<float> &descriptors);
-
-
-
-            //! finds the keypoints using fast hessian detector used in SURF
-
-            //! supports CV_8UC1 images
-
-            //! keypoints will have nFeature cols and 6 rows
-
-            //! keypoints.ptr<float>(X_ROW)[i] will contain x coordinate of i'th feature
-
-            //! keypoints.ptr<float>(Y_ROW)[i] will contain y coordinate of i'th feature
-
-            //! keypoints.ptr<float>(LAPLACIAN_ROW)[i] will contain laplacian sign of i'th feature
-
-            //! keypoints.ptr<float>(OCTAVE_ROW)[i] will contain octave of i'th feature
-
-            //! keypoints.ptr<float>(SIZE_ROW)[i] will contain size of i'th feature
-
-            //! keypoints.ptr<float>(ANGLE_ROW)[i] will contain orientation of i'th feature
-
-            //! keypoints.ptr<float>(HESSIAN_ROW)[i] will contain response of i'th feature
-
-            void operator()(const oclMat &img, const oclMat &mask, oclMat &keypoints);
-
-            //! finds the keypoints and computes their descriptors.
-
-            //! Optionally it can compute descriptors for the user-provided keypoints and recompute keypoints direction
-
-            void operator()(const oclMat &img, const oclMat &mask, oclMat &keypoints, oclMat &descriptors,
-
-                            bool useProvidedKeypoints = false);
-
-
-
-            void operator()(const oclMat &img, const oclMat &mask, std::vector<KeyPoint> &keypoints);
-
-            void operator()(const oclMat &img, const oclMat &mask, std::vector<KeyPoint> &keypoints, oclMat &descriptors,
-
-                            bool useProvidedKeypoints = false);
-
-
-
-            void operator()(const oclMat &img, const oclMat &mask, std::vector<KeyPoint> &keypoints, std::vector<float> &descriptors,
-
-                            bool useProvidedKeypoints = false);
-
-
-
-            void releaseMemory();
-
-
-
-            // SURF parameters
-
-            float hessianThreshold;
-
-            int nOctaves;
-
-            int nOctaveLayers;
-
-            bool extended;
-
-            bool upright;
-
-
-
-            //! max keypoints = min(keypointsRatio * img.size().area(), 65535)
-
-            float keypointsRatio;
-
-
-
-            oclMat sum, mask1, maskSum, intBuffer;
-
-
-
-            oclMat det, trace;
-
-
-
-            oclMat maxPosBuffer;
-
-        };
-
         ////////////////////////feature2d_ocl/////////////////
         /****************************************************************************************\
         *                                      Distance                                          *
@@ -1806,6 +1667,70 @@ namespace cv
 
         //! computes moments of the rasterized shape or a vector of points
         CV_EXPORTS Moments ocl_moments(InputArray _array, bool binaryImage);
+
+        class CV_EXPORTS StereoBM_OCL
+        {
+        public:
+            enum { BASIC_PRESET = 0, PREFILTER_XSOBEL = 1 };
+
+            enum { DEFAULT_NDISP = 64, DEFAULT_WINSZ = 19 };
+
+            //! the default constructor
+            StereoBM_OCL();
+            //! the full constructor taking the camera-specific preset, number of disparities and the SAD window size. ndisparities must be multiple of 8.
+            StereoBM_OCL(int preset, int ndisparities = DEFAULT_NDISP, int winSize = DEFAULT_WINSZ);
+
+            //! the stereo correspondence operator. Finds the disparity for the specified rectified stereo pair
+            //! Output disparity has CV_8U type.
+            void operator() ( const oclMat &left, const oclMat &right, oclMat &disparity);
+
+            //! Some heuristics that tries to estmate
+            // if current GPU will be faster then CPU in this algorithm.
+            // It queries current active device.
+            static bool checkIfGpuCallReasonable();
+
+            int preset;
+            int ndisp;
+            int winSize;
+
+            // If avergeTexThreshold  == 0 => post procesing is disabled
+            // If avergeTexThreshold != 0 then disparity is set 0 in each point (x,y) where for left image
+            // SumOfHorizontalGradiensInWindow(x, y, winSize) < (winSize * winSize) * avergeTexThreshold
+            // i.e. input left image is low textured.
+            float avergeTexThreshold;
+        private:
+            oclMat minSSD, leBuf, riBuf;
+        };
+        class CV_EXPORTS StereoBeliefPropagation
+        {
+        public:
+            enum { DEFAULT_NDISP  = 64 };
+            enum { DEFAULT_ITERS  = 5  };
+            enum { DEFAULT_LEVELS = 5  };
+            static void estimateRecommendedParams(int width, int height, int &ndisp, int &iters, int &levels);
+            explicit StereoBeliefPropagation(int ndisp  = DEFAULT_NDISP,
+                                             int iters  = DEFAULT_ITERS,
+                                             int levels = DEFAULT_LEVELS,
+                                             int msg_type = CV_16S);
+            StereoBeliefPropagation(int ndisp, int iters, int levels,
+                                    float max_data_term, float data_weight,
+                                    float max_disc_term, float disc_single_jump,
+                                    int msg_type = CV_32F);
+            void operator()(const oclMat &left, const oclMat &right, oclMat &disparity);
+            void operator()(const oclMat &data, oclMat &disparity);
+            int ndisp;
+            int iters;
+            int levels;
+            float max_data_term;
+            float data_weight;
+            float max_disc_term;
+            float disc_single_jump;
+            int msg_type;
+        private:
+            oclMat u, d, l, r, u2, d2, l2, r2;
+            std::vector<oclMat> datas;
+            oclMat out;
+        };
     }
 }
 #if defined _MSC_VER && _MSC_VER >= 1200
