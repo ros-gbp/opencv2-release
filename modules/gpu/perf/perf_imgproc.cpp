@@ -1,3 +1,45 @@
+/*M///////////////////////////////////////////////////////////////////////////////////////
+//
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//
+//  By downloading, copying, installing or using the software you agree to this license.
+//  If you do not agree to this license, do not download, install,
+//  copy or use the software.
+//
+//
+//                           License Agreement
+//                For Open Source Computer Vision Library
+//
+// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Third party copyrights are property of their respective owners.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//   * Redistribution's of source code must retain the above copyright notice,
+//     this list of conditions and the following disclaimer.
+//
+//   * Redistribution's in binary form must reproduce the above copyright notice,
+//     this list of conditions and the following disclaimer in the documentation
+//     and/or other materials provided with the distribution.
+//
+//   * The name of the copyright holders may not be used to endorse or promote products
+//     derived from this software without specific prior written permission.
+//
+// This software is provided by the copyright holders and contributors "as is" and
+// any express or implied warranties, including, but not limited to, the implied
+// warranties of merchantability and fitness for a particular purpose are disclaimed.
+// In no event shall the Intel Corporation or contributors be liable for any direct,
+// indirect, incidental, special, exemplary, or consequential damages
+// (including, but not limited to, procurement of substitute goods or services;
+// loss of use, data, or profits; or business interruption) however caused
+// and on any theory of liability, whether in contract, strict liability,
+// or tort (including negligence or otherwise) arising in any way out of
+// the use of this software, even if advised of the possibility of such damage.
+//
+//M*/
+
 #include "perf_precomp.hpp"
 
 using namespace std;
@@ -558,6 +600,39 @@ PERF_TEST_P(Sz, ImgProc_EqualizeHist,
     }
 }
 
+DEF_PARAM_TEST(Sz_ClipLimit, cv::Size, double);
+
+PERF_TEST_P(Sz_ClipLimit, ImgProc_CLAHE,
+            Combine(GPU_TYPICAL_MAT_SIZES,
+                    Values(0.0, 40.0)))
+{
+    const cv::Size size = GET_PARAM(0);
+    const double clipLimit = GET_PARAM(1);
+
+    cv::Mat src(size, CV_8UC1);
+    declare.in(src, WARMUP_RNG);
+
+    if (PERF_RUN_GPU())
+    {
+        cv::Ptr<cv::gpu::CLAHE> clahe = cv::gpu::createCLAHE(clipLimit);
+        cv::gpu::GpuMat d_src(src);
+        cv::gpu::GpuMat dst;
+
+        TEST_CYCLE() clahe->apply(d_src, dst);
+
+        GPU_SANITY_CHECK(dst);
+    }
+    else
+    {
+        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(clipLimit);
+        cv::Mat dst;
+
+        TEST_CYCLE() clahe->apply(src, dst);
+
+        CPU_SANITY_CHECK(dst);
+    }
+}
+
 //////////////////////////////////////////////////////////////////////
 // ColumnSum
 
@@ -632,7 +707,7 @@ DEF_PARAM_TEST_1(Image, string);
 PERF_TEST_P(Image, ImgProc_MeanShiftFiltering,
             Values<string>("gpu/meanshift/cones.png"))
 {
-    declare.time(15.0);
+    declare.time(300.0);
 
     const cv::Mat img = readImage(GetParam());
     ASSERT_FALSE(img.empty());
@@ -668,7 +743,7 @@ PERF_TEST_P(Image, ImgProc_MeanShiftFiltering,
 PERF_TEST_P(Image, ImgProc_MeanShiftProc,
             Values<string>("gpu/meanshift/cones.png"))
 {
-    declare.time(5.0);
+    declare.time(300.0);
 
     const cv::Mat img = readImage(GetParam());
     ASSERT_FALSE(img.empty());
@@ -702,7 +777,7 @@ PERF_TEST_P(Image, ImgProc_MeanShiftProc,
 PERF_TEST_P(Image, ImgProc_MeanShiftSegmentation,
             Values<string>("gpu/meanshift/cones.png"))
 {
-    declare.time(5.0);
+    declare.time(300.0);
 
     const cv::Mat img = readImage(GetParam());
     ASSERT_FALSE(img.empty());
@@ -830,6 +905,8 @@ PERF_TEST_P(Sz_TemplateSz_Cn_Method, ImgProc_MatchTemplate8U,
                     GPU_CHANNELS_1_3_4,
                     ALL_TEMPLATE_METHODS))
 {
+    declare.time(300.0);
+
     const cv::Size size = GET_PARAM(0);
     const cv::Size templ_size = GET_PARAM(1);
     const int cn = GET_PARAM(2);
@@ -868,6 +945,8 @@ PERF_TEST_P(Sz_TemplateSz_Cn_Method, ImgProc_MatchTemplate32F,
                     GPU_CHANNELS_1_3_4,
                     Values(TemplateMethod(cv::TM_SQDIFF), TemplateMethod(cv::TM_CCORR))))
 {
+    declare.time(300.0);
+
     const cv::Size size = GET_PARAM(0);
     const cv::Size templ_size = GET_PARAM(1);
     const int cn = GET_PARAM(2);
@@ -1034,7 +1113,7 @@ PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, ImgProc_CornerHarris,
 
         TEST_CYCLE() cv::gpu::cornerHarris(d_img, dst, d_Dx, d_Dy, d_buf, blockSize, apertureSize, k, borderMode);
 
-        GPU_SANITY_CHECK(dst);
+        GPU_SANITY_CHECK(dst, 1e-4);
     }
     else
     {
@@ -1077,7 +1156,7 @@ PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, ImgProc_CornerMinEigenVal,
 
         TEST_CYCLE() cv::gpu::cornerMinEigenVal(d_img, dst, d_Dx, d_Dy, d_buf, blockSize, apertureSize, borderMode);
 
-        GPU_SANITY_CHECK(dst);
+        GPU_SANITY_CHECK(dst, 1e-4);
     }
     else
     {
@@ -1341,7 +1420,12 @@ PERF_TEST_P(Sz_Depth_Code, ImgProc_CvtColorBayer,
                     Values(CvtColorInfo(1, 3, cv::COLOR_BayerBG2BGR),
                            CvtColorInfo(1, 3, cv::COLOR_BayerGB2BGR),
                            CvtColorInfo(1, 3, cv::COLOR_BayerRG2BGR),
-                           CvtColorInfo(1, 3, cv::COLOR_BayerGR2BGR))))
+                           CvtColorInfo(1, 3, cv::COLOR_BayerGR2BGR),
+
+                           CvtColorInfo(1, 1, cv::COLOR_BayerBG2GRAY),
+                           CvtColorInfo(1, 1, cv::COLOR_BayerGB2GRAY),
+                           CvtColorInfo(1, 1, cv::COLOR_BayerRG2GRAY),
+                           CvtColorInfo(1, 1, cv::COLOR_BayerGR2GRAY))))
 {
     const cv::Size size = GET_PARAM(0);
     const int depth = GET_PARAM(1);
@@ -1366,6 +1450,50 @@ PERF_TEST_P(Sz_Depth_Code, ImgProc_CvtColorBayer,
         TEST_CYCLE() cv::cvtColor(src, dst, info.code, info.dcn);
 
         CPU_SANITY_CHECK(dst);
+    }
+}
+
+CV_ENUM(DemosaicingCode,
+        cv::COLOR_BayerBG2BGR, cv::COLOR_BayerGB2BGR, cv::COLOR_BayerRG2BGR, cv::COLOR_BayerGR2BGR,
+        cv::COLOR_BayerBG2GRAY, cv::COLOR_BayerGB2GRAY, cv::COLOR_BayerRG2GRAY, cv::COLOR_BayerGR2GRAY,
+        cv::gpu::COLOR_BayerBG2BGR_MHT, cv::gpu::COLOR_BayerGB2BGR_MHT, cv::gpu::COLOR_BayerRG2BGR_MHT, cv::gpu::COLOR_BayerGR2BGR_MHT,
+        cv::gpu::COLOR_BayerBG2GRAY_MHT, cv::gpu::COLOR_BayerGB2GRAY_MHT, cv::gpu::COLOR_BayerRG2GRAY_MHT, cv::gpu::COLOR_BayerGR2GRAY_MHT)
+
+DEF_PARAM_TEST(Sz_Code, cv::Size, DemosaicingCode);
+
+PERF_TEST_P(Sz_Code, ImgProc_Demosaicing,
+            Combine(GPU_TYPICAL_MAT_SIZES,
+                    ValuesIn(DemosaicingCode::all())))
+{
+    const cv::Size size = GET_PARAM(0);
+    const int code = GET_PARAM(1);
+
+    cv::Mat src(size, CV_8UC1);
+    declare.in(src, WARMUP_RNG);
+
+    if (PERF_RUN_GPU())
+    {
+        const cv::gpu::GpuMat d_src(src);
+        cv::gpu::GpuMat dst;
+
+        TEST_CYCLE() cv::gpu::demosaicing(d_src, dst, code);
+
+        GPU_SANITY_CHECK(dst);
+    }
+    else
+    {
+        if (code >= cv::COLOR_COLORCVT_MAX)
+        {
+            FAIL_NO_CPU();
+        }
+        else
+        {
+            cv::Mat dst;
+
+            TEST_CYCLE() cv::cvtColor(src, dst, code);
+
+            CPU_SANITY_CHECK(dst);
+        }
     }
 }
 
