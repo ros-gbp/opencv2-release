@@ -866,3 +866,5 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
   message(WARNING "The source directory is the same as binary directory. \"make clean\" may damage the source tree")
 endif()
 
+# Install catkin package.xml
+install(FILES package.xml DESTINATION share/opencv2)
