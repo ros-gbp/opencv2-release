@@ -1,4 +1,4 @@
-From 9cda4b99deaf6decc381a3c9d822e184e045b81b Mon Sep 17 00:00:00 2001
+From e3a4ff0f368ffdd3245c65aafa245b7078845d25 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 10:54:11 -0800
 Subject: [PATCH] Squashed previous commits and dropped package.xml
@@ -17,20 +17,18 @@ install opencv2.pc
 
 2.4.4
 ---
- CMakeLists.txt                         |  2 ++
- cmake/OpenCVGenPkgconfig.cmake         |  2 ++
- cmake/templates/OpenCVConfig.cmake.in  |  1 -
- cmake/templates/opencv-XXX.pc.cmake.in |  3 +-
- doc/CMakeLists.txt                     |  4 +--
- package.xml                            | 52 ----------------------------------
- 6 files changed, 8 insertions(+), 56 deletions(-)
- delete mode 100644 package.xml
+ CMakeLists.txt                         | 2 ++
+ cmake/OpenCVGenPkgconfig.cmake         | 2 ++
+ cmake/templates/OpenCVConfig.cmake.in  | 1 -
+ cmake/templates/opencv-XXX.pc.cmake.in | 3 ++-
+ doc/CMakeLists.txt                     | 4 ++--
+ 5 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 579312d..0715d97 100644
+index f7e9489..685631e 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -864,3 +864,5 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+@@ -866,3 +866,5 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
    message(WARNING "The source directory is the same as binary directory. \"make clean\" may damage the source tree")
  endif()
  
@@ -94,4 +92,6 @@ index 0f2695f..f9a49c9 100644
 -endif()
 \ No newline at end of file
 +endif()
+-- 
+1.7.12.4 (Apple Git-37)
 
