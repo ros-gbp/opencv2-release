@@ -510,7 +510,7 @@ static bool pyopencv_to(PyObject* obj, double& value, const char* name = "<unkno
     (void)name;
     if(!obj || obj == Py_None)
         return true;
-    if(PyInt_CheckExact(obj))
+    if(!!PyInt_CheckExact(obj))
         value = (double)PyInt_AS_LONG(obj);
     else
         value = PyFloat_AsDouble(obj);
@@ -527,7 +527,7 @@ static bool pyopencv_to(PyObject* obj, float& value, const char* name = "<unknow
     (void)name;
     if(!obj || obj == Py_None)
         return true;
-    if(PyInt_CheckExact(obj))
+    if(!!PyInt_CheckExact(obj))
         value = (float)PyInt_AS_LONG(obj);
     else
         value = (float)PyFloat_AsDouble(obj);
@@ -623,7 +623,7 @@ static inline bool pyopencv_to(PyObject* obj, Point& p, const char* name = "<unk
     (void)name;
     if(!obj || obj == Py_None)
         return true;
-    if(PyComplex_CheckExact(obj))
+    if(!!PyComplex_CheckExact(obj))
     {
         Py_complex c = PyComplex_AsCComplex(obj);
         p.x = saturate_cast<int>(c.real);
@@ -638,7 +638,7 @@ static inline bool pyopencv_to(PyObject* obj, Point2f& p, const char* name = "<u
     (void)name;
     if(!obj || obj == Py_None)
         return true;
-    if(PyComplex_CheckExact(obj))
+    if(!!PyComplex_CheckExact(obj))
     {
         Py_complex c = PyComplex_AsCComplex(obj);
         p.x = saturate_cast<float>(c.real);
@@ -957,7 +957,7 @@ static inline PyObject* pyopencv_from(const Moments& m)
                          "mu20", m.mu20, "mu11", m.mu11, "mu02", m.mu02,
                          "mu30", m.mu30, "mu21", m.mu21, "mu12", m.mu12, "mu03", m.mu03,
                          "nu20", m.nu20, "nu11", m.nu11, "nu02", m.nu02,
-                         "nu30", m.nu30, "nu21", m.nu21, "nu12", m.nu12, "mu03", m.nu03);
+                         "nu30", m.nu30, "nu21", m.nu21, "nu12", m.nu12, "nu03", m.nu03);
 }
 
 static inline PyObject* pyopencv_from(const CvDTreeNode* node)
@@ -989,7 +989,7 @@ static bool pyopencv_to(PyObject *o, cv::flann::IndexParams& p, const char *name
                 const char* value = PyString_AsString(item);
                 p.setString(k, value);
             }
-            else if( PyBool_Check(item) )
+            else if( !!PyBool_Check(item) )
                 p.setBool(k, item == Py_True);
             else if( PyInt_Check(item) )
             {
