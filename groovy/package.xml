@@ -21,13 +21,7 @@
   <build_depend>libv4l-dev</build_depend>
   <build_depend>python</build_depend>
   <build_depend>python-numpy</build_depend>
-  <build_depend>python-sphinx</build_depend>
   <build_depend>python-support</build_depend>
-  <build_depend>texlive-fonts-extra</build_depend>
-  <build_depend>texlive-fonts-recommended</build_depend>
-  <build_depend>texlive-latex-base</build_depend>
-  <build_depend>texlive-latex-extra</build_depend>
-  <build_depend>texlive-latex-recommended</build_depend>
   <build_depend>zlib</build_depend>
 
   <buildtool_depend>cmake</buildtool_depend>
