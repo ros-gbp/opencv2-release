@@ -1,4 +1,4 @@
-From f8f5314bb1271956a86d098e3140edc726aead02 Mon Sep 17 00:00:00 2001
+From b86cf4a81beaa80c39562fbb1ef7764f25863d4f Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 11:14:45 -0800
 Subject: [PATCH] Customized debian rules file
@@ -52,5 +52,5 @@ index d45dd5f..339bbe1 100644
  override_dh_auto_build:
  	# In case we're installing to a non-standard location, look for a setup.sh
 -- 
-1.7.12.4 (Apple Git-37)
+1.8.1.2
 
