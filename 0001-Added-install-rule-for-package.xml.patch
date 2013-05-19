@@ -1,10 +1,10 @@
-From ca8a60282b69b810cfbb9afb718800ba602c47b4 Mon Sep 17 00:00:00 2001
+From a302ab87ac83588ddde9a82e38046dbcd5c1678f Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 13 Mar 2013 10:58:42 -0700
-Subject: [PATCH 1/2] Added install rule for package.xml
+Subject: [PATCH 1/3] Added install rule for package.xml
 
 ---
- CMakeLists.txt |    2 ++
+ CMakeLists.txt | 2 ++
  1 file changed, 2 insertions(+)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
@@ -18,5 +18,5 @@ index 579312d..0715d97 100644
 +# Install catkin package.xml
 +install(FILES package.xml DESTINATION share/opencv2)
 -- 
-1.7.9.5
+1.8.1.2
 
