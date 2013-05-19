@@ -1,0 +1,32 @@
+From 229a9669324be486a2c0061db5e6e8ea2b131b7a Mon Sep 17 00:00:00 2001
+From: Vincent Rabaud <vrabaud@willowgarage.com>
+Date: Sun, 19 May 2013 13:53:56 +0000
+Subject: [PATCH 2/2] do not build the docs by default
+
+---
+ doc/CMakeLists.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
+index f9a49c9..0f2695f 100644
+--- a/doc/CMakeLists.txt
++++ b/doc/CMakeLists.txt
+@@ -68,7 +68,7 @@ if(BUILD_DOCS AND HAVE_SPHINX)
+            ${OPENCV_FILES_UG} ${OPENCV_FILES_TUT} ${OPENCV_FILES_TUT_PICT})
+ 
+   if(PDFLATEX_COMPILER)
+-    add_custom_target(docs ALL
++    add_custom_target(docs
+       COMMAND ${SPHINX_BUILD} -b latex -c ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. .
+       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/pics ${CMAKE_CURRENT_BINARY_DIR}/doc/opencv1/pics
+       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/mymath.sty ${CMAKE_CURRENT_BINARY_DIR}
+@@ -122,4 +122,4 @@ if(BUILD_DOCS AND HAVE_SPHINX)
+     install(FILES "${f}" DESTINATION "${OPENCV_DOC_INSTALL_PATH}" OPTIONAL)
+   endforeach()
+ 
+-endif()
++endif()
+\ No newline at end of file
+-- 
+1.8.1.2
+

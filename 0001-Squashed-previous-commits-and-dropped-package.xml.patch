@@ -1,7 +1,7 @@
-From e3a4ff0f368ffdd3245c65aafa245b7078845d25 Mon Sep 17 00:00:00 2001
+From e54da90f9b32eda0441d639c259d8c0bd5a2240c Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 10:54:11 -0800
-Subject: [PATCH] Squashed previous commits and dropped package.xml
+Subject: [PATCH 1/2] Squashed previous commits and dropped package.xml
 
 Added install rule for package.xml
 
@@ -93,5 +93,5 @@ index 0f2695f..f9a49c9 100644
 \ No newline at end of file
 +endif()
 -- 
-1.7.12.4 (Apple Git-37)
+1.8.1.2
 
