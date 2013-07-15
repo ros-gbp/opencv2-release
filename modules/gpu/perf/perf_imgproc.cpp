@@ -1,3 +1,45 @@
+/*M///////////////////////////////////////////////////////////////////////////////////////
+//
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//
+//  By downloading, copying, installing or using the software you agree to this license.
+//  If you do not agree to this license, do not download, install,
+//  copy or use the software.
+//
+//
+//                           License Agreement
+//                For Open Source Computer Vision Library
+//
+// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Third party copyrights are property of their respective owners.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//   * Redistribution's of source code must retain the above copyright notice,
+//     this list of conditions and the following disclaimer.
+//
+//   * Redistribution's in binary form must reproduce the above copyright notice,
+//     this list of conditions and the following disclaimer in the documentation
+//     and/or other materials provided with the distribution.
+//
+//   * The name of the copyright holders may not be used to endorse or promote products
+//     derived from this software without specific prior written permission.
+//
+// This software is provided by the copyright holders and contributors "as is" and
+// any express or implied warranties, including, but not limited to, the implied
+// warranties of merchantability and fitness for a particular purpose are disclaimed.
+// In no event shall the Intel Corporation or contributors be liable for any direct,
+// indirect, incidental, special, exemplary, or consequential damages
+// (including, but not limited to, procurement of substitute goods or services;
+// loss of use, data, or profits; or business interruption) however caused
+// and on any theory of liability, whether in contract, strict liability,
+// or tort (including negligence or otherwise) arising in any way out of
+// the use of this software, even if advised of the possibility of such damage.
+//
+//M*/
+
 #include "perf_precomp.hpp"
 
 using namespace std;
@@ -9,7 +51,6 @@ using namespace perf;
 
 enum { HALF_SIZE=0, UPSIDE_DOWN, REFLECTION_X, REFLECTION_BOTH };
 CV_ENUM(RemapMode, HALF_SIZE, UPSIDE_DOWN, REFLECTION_X, REFLECTION_BOTH);
-#define ALL_REMAP_MODES ValuesIn(RemapMode::all())
 
 void generateMap(cv::Mat& map_x, cv::Mat& map_y, int remapMode)
 {
@@ -56,7 +97,7 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Border_Mode, ImgProc_Remap,
                     GPU_CHANNELS_1_3_4,
                     Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
                     ALL_BORDER_MODES,
-                    ALL_REMAP_MODES))
+                    RemapMode::all()))
 {
     declare.time(20.0);
 
@@ -327,15 +368,14 @@ PERF_TEST_P(Sz_Depth_Cn_Border, ImgProc_CopyMakeBorder,
 //////////////////////////////////////////////////////////////////////
 // Threshold
 
-CV_ENUM(ThreshOp, cv::THRESH_BINARY, cv::THRESH_BINARY_INV, cv::THRESH_TRUNC, cv::THRESH_TOZERO, cv::THRESH_TOZERO_INV)
-#define ALL_THRESH_OPS ValuesIn(ThreshOp::all())
+CV_ENUM(ThreshOp, THRESH_BINARY, THRESH_BINARY_INV, THRESH_TRUNC, THRESH_TOZERO, THRESH_TOZERO_INV)
 
 DEF_PARAM_TEST(Sz_Depth_Op, cv::Size, MatDepth, ThreshOp);
 
 PERF_TEST_P(Sz_Depth_Op, ImgProc_Threshold,
             Combine(GPU_TYPICAL_MAT_SIZES,
             Values(CV_8U, CV_16U, CV_32F, CV_64F),
-            ALL_THRESH_OPS))
+            ThreshOp::all()))
 {
     const cv::Size size = GET_PARAM(0);
     const int depth = GET_PARAM(1);
@@ -558,6 +598,39 @@ PERF_TEST_P(Sz, ImgProc_EqualizeHist,
     }
 }
 
+DEF_PARAM_TEST(Sz_ClipLimit, cv::Size, double);
+
+PERF_TEST_P(Sz_ClipLimit, ImgProc_CLAHE,
+            Combine(GPU_TYPICAL_MAT_SIZES,
+                    Values(0.0, 40.0)))
+{
+    const cv::Size size = GET_PARAM(0);
+    const double clipLimit = GET_PARAM(1);
+
+    cv::Mat src(size, CV_8UC1);
+    declare.in(src, WARMUP_RNG);
+
+    if (PERF_RUN_GPU())
+    {
+        cv::Ptr<cv::gpu::CLAHE> clahe = cv::gpu::createCLAHE(clipLimit);
+        cv::gpu::GpuMat d_src(src);
+        cv::gpu::GpuMat dst;
+
+        TEST_CYCLE() clahe->apply(d_src, dst);
+
+        GPU_SANITY_CHECK(dst);
+    }
+    else
+    {
+        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(clipLimit);
+        cv::Mat dst;
+
+        TEST_CYCLE() clahe->apply(src, dst);
+
+        CPU_SANITY_CHECK(dst);
+    }
+}
+
 //////////////////////////////////////////////////////////////////////
 // ColumnSum
 
@@ -632,7 +705,7 @@ DEF_PARAM_TEST_1(Image, string);
 PERF_TEST_P(Image, ImgProc_MeanShiftFiltering,
             Values<string>("gpu/meanshift/cones.png"))
 {
-    declare.time(15.0);
+    declare.time(300.0);
 
     const cv::Mat img = readImage(GetParam());
     ASSERT_FALSE(img.empty());
@@ -668,7 +741,7 @@ PERF_TEST_P(Image, ImgProc_MeanShiftFiltering,
 PERF_TEST_P(Image, ImgProc_MeanShiftProc,
             Values<string>("gpu/meanshift/cones.png"))
 {
-    declare.time(5.0);
+    declare.time(300.0);
 
     const cv::Mat img = readImage(GetParam());
     ASSERT_FALSE(img.empty());
@@ -702,7 +775,7 @@ PERF_TEST_P(Image, ImgProc_MeanShiftProc,
 PERF_TEST_P(Image, ImgProc_MeanShiftSegmentation,
             Values<string>("gpu/meanshift/cones.png"))
 {
-    declare.time(5.0);
+    declare.time(300.0);
 
     const cv::Mat img = readImage(GetParam());
     ASSERT_FALSE(img.empty());
@@ -819,8 +892,7 @@ PERF_TEST_P(Sz_KernelSz_Ccorr, ImgProc_Convolve,
 ////////////////////////////////////////////////////////////////////////////////
 // MatchTemplate8U
 
-CV_ENUM(TemplateMethod, cv::TM_SQDIFF, cv::TM_SQDIFF_NORMED, cv::TM_CCORR, cv::TM_CCORR_NORMED, cv::TM_CCOEFF, cv::TM_CCOEFF_NORMED)
-#define ALL_TEMPLATE_METHODS ValuesIn(TemplateMethod::all())
+CV_ENUM(TemplateMethod, TM_SQDIFF, TM_SQDIFF_NORMED, TM_CCORR, TM_CCORR_NORMED, TM_CCOEFF, TM_CCOEFF_NORMED)
 
 DEF_PARAM_TEST(Sz_TemplateSz_Cn_Method, cv::Size, cv::Size, MatCn, TemplateMethod);
 
@@ -828,8 +900,10 @@ PERF_TEST_P(Sz_TemplateSz_Cn_Method, ImgProc_MatchTemplate8U,
             Combine(GPU_TYPICAL_MAT_SIZES,
                     Values(cv::Size(5, 5), cv::Size(16, 16), cv::Size(30, 30)),
                     GPU_CHANNELS_1_3_4,
-                    ALL_TEMPLATE_METHODS))
+                    TemplateMethod::all()))
 {
+    declare.time(300.0);
+
     const cv::Size size = GET_PARAM(0);
     const cv::Size templ_size = GET_PARAM(1);
     const int cn = GET_PARAM(2);
@@ -868,6 +942,8 @@ PERF_TEST_P(Sz_TemplateSz_Cn_Method, ImgProc_MatchTemplate32F,
                     GPU_CHANNELS_1_3_4,
                     Values(TemplateMethod(cv::TM_SQDIFF), TemplateMethod(cv::TM_CCORR))))
 {
+    declare.time(300.0);
+
     const cv::Size size = GET_PARAM(0);
     const cv::Size templ_size = GET_PARAM(1);
     const int cn = GET_PARAM(2);
@@ -900,7 +976,7 @@ PERF_TEST_P(Sz_TemplateSz_Cn_Method, ImgProc_MatchTemplate32F,
 //////////////////////////////////////////////////////////////////////
 // MulSpectrums
 
-CV_FLAGS(DftFlags, 0, cv::DFT_INVERSE, cv::DFT_SCALE, cv::DFT_ROWS, cv::DFT_COMPLEX_OUTPUT, cv::DFT_REAL_OUTPUT)
+CV_FLAGS(DftFlags, 0, DFT_INVERSE, DFT_SCALE, DFT_ROWS, DFT_COMPLEX_OUTPUT, DFT_REAL_OUTPUT)
 
 DEF_PARAM_TEST(Sz_Flags, cv::Size, DftFlags);
 
@@ -1034,7 +1110,7 @@ PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, ImgProc_CornerHarris,
 
         TEST_CYCLE() cv::gpu::cornerHarris(d_img, dst, d_Dx, d_Dy, d_buf, blockSize, apertureSize, k, borderMode);
 
-        GPU_SANITY_CHECK(dst);
+        GPU_SANITY_CHECK(dst, 1e-4);
     }
     else
     {
@@ -1077,7 +1153,7 @@ PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, ImgProc_CornerMinEigenVal,
 
         TEST_CYCLE() cv::gpu::cornerMinEigenVal(d_img, dst, d_Dx, d_Dy, d_buf, blockSize, apertureSize, borderMode);
 
-        GPU_SANITY_CHECK(dst);
+        GPU_SANITY_CHECK(dst, 1e-4);
     }
     else
     {
@@ -1341,7 +1417,12 @@ PERF_TEST_P(Sz_Depth_Code, ImgProc_CvtColorBayer,
                     Values(CvtColorInfo(1, 3, cv::COLOR_BayerBG2BGR),
                            CvtColorInfo(1, 3, cv::COLOR_BayerGB2BGR),
                            CvtColorInfo(1, 3, cv::COLOR_BayerRG2BGR),
-                           CvtColorInfo(1, 3, cv::COLOR_BayerGR2BGR))))
+                           CvtColorInfo(1, 3, cv::COLOR_BayerGR2BGR),
+
+                           CvtColorInfo(1, 1, cv::COLOR_BayerBG2GRAY),
+                           CvtColorInfo(1, 1, cv::COLOR_BayerGB2GRAY),
+                           CvtColorInfo(1, 1, cv::COLOR_BayerRG2GRAY),
+                           CvtColorInfo(1, 1, cv::COLOR_BayerGR2GRAY))))
 {
     const cv::Size size = GET_PARAM(0);
     const int depth = GET_PARAM(1);
@@ -1366,6 +1447,50 @@ PERF_TEST_P(Sz_Depth_Code, ImgProc_CvtColorBayer,
         TEST_CYCLE() cv::cvtColor(src, dst, info.code, info.dcn);
 
         CPU_SANITY_CHECK(dst);
+    }
+}
+
+CV_ENUM(DemosaicingCode,
+        COLOR_BayerBG2BGR, COLOR_BayerGB2BGR, COLOR_BayerRG2BGR, COLOR_BayerGR2BGR,
+        COLOR_BayerBG2GRAY, COLOR_BayerGB2GRAY, COLOR_BayerRG2GRAY, COLOR_BayerGR2GRAY,
+        COLOR_BayerBG2BGR_MHT, COLOR_BayerGB2BGR_MHT, COLOR_BayerRG2BGR_MHT, COLOR_BayerGR2BGR_MHT,
+        COLOR_BayerBG2GRAY_MHT, COLOR_BayerGB2GRAY_MHT, COLOR_BayerRG2GRAY_MHT, COLOR_BayerGR2GRAY_MHT)
+
+DEF_PARAM_TEST(Sz_Code, cv::Size, DemosaicingCode);
+
+PERF_TEST_P(Sz_Code, ImgProc_Demosaicing,
+            Combine(GPU_TYPICAL_MAT_SIZES,
+                    DemosaicingCode::all()))
+{
+    const cv::Size size = GET_PARAM(0);
+    const int code = GET_PARAM(1);
+
+    cv::Mat src(size, CV_8UC1);
+    declare.in(src, WARMUP_RNG);
+
+    if (PERF_RUN_GPU())
+    {
+        const cv::gpu::GpuMat d_src(src);
+        cv::gpu::GpuMat dst;
+
+        TEST_CYCLE() cv::gpu::demosaicing(d_src, dst, code);
+
+        GPU_SANITY_CHECK(dst);
+    }
+    else
+    {
+        if (code >= cv::COLOR_COLORCVT_MAX)
+        {
+            FAIL_NO_CPU();
+        }
+        else
+        {
+            cv::Mat dst;
+
+            TEST_CYCLE() cv::cvtColor(src, dst, code);
+
+            CPU_SANITY_CHECK(dst);
+        }
     }
 }
 
@@ -1399,15 +1524,14 @@ PERF_TEST_P(Sz, ImgProc_SwapChannels,
 //////////////////////////////////////////////////////////////////////
 // AlphaComp
 
-CV_ENUM(AlphaOp, cv::gpu::ALPHA_OVER, cv::gpu::ALPHA_IN, cv::gpu::ALPHA_OUT, cv::gpu::ALPHA_ATOP, cv::gpu::ALPHA_XOR, cv::gpu::ALPHA_PLUS, cv::gpu::ALPHA_OVER_PREMUL, cv::gpu::ALPHA_IN_PREMUL, cv::gpu::ALPHA_OUT_PREMUL, cv::gpu::ALPHA_ATOP_PREMUL, cv::gpu::ALPHA_XOR_PREMUL, cv::gpu::ALPHA_PLUS_PREMUL, cv::gpu::ALPHA_PREMUL)
-#define ALL_ALPHA_OPS ValuesIn(AlphaOp::all())
+CV_ENUM(AlphaOp, ALPHA_OVER, ALPHA_IN, ALPHA_OUT, ALPHA_ATOP, ALPHA_XOR, ALPHA_PLUS, ALPHA_OVER_PREMUL, ALPHA_IN_PREMUL, ALPHA_OUT_PREMUL, ALPHA_ATOP_PREMUL, ALPHA_XOR_PREMUL, ALPHA_PLUS_PREMUL, ALPHA_PREMUL)
 
 DEF_PARAM_TEST(Sz_Type_Op, cv::Size, MatType, AlphaOp);
 
 PERF_TEST_P(Sz_Type_Op, ImgProc_AlphaComp,
             Combine(GPU_TYPICAL_MAT_SIZES,
                     Values(CV_8UC4, CV_16UC4, CV_32SC4, CV_32FC4),
-                    ALL_ALPHA_OPS))
+                    AlphaOp::all()))
 {
     const cv::Size size = GET_PARAM(0);
     const int type = GET_PARAM(1);
@@ -1687,7 +1811,7 @@ PERF_TEST_P(Sz_Dp_MinDist, ImgProc_HoughCircles,
 //////////////////////////////////////////////////////////////////////
 // GeneralizedHough
 
-CV_FLAGS(GHMethod, cv::GHT_POSITION, cv::GHT_SCALE, cv::GHT_ROTATION);
+CV_FLAGS(GHMethod, GHT_POSITION, GHT_SCALE, GHT_ROTATION);
 
 DEF_PARAM_TEST(Method_Sz, GHMethod, cv::Size);
 

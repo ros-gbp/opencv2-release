@@ -17,10 +17,6 @@ if(BUILD_EXAMPLES AND OCV_DEPENDENCIES_FOUND)
     ocv_include_directories(${OPENCL_INCLUDE_DIR})
   endif()
 
-  if(CMAKE_COMPILER_IS_GNUCXX AND NOT ENABLE_NOISY_WARNINGS)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-function")
-  endif()
-
   # ---------------------------------------------
   #      Define executable targets
   # ---------------------------------------------
@@ -31,7 +27,7 @@ if(BUILD_EXAMPLES AND OCV_DEPENDENCIES_FOUND)
     target_link_libraries(${the_target} ${OPENCV_LINKER_LIBS} ${OPENCV_OCL_SAMPLES_REQUIRED_DEPS})
 
     set_target_properties(${the_target} PROPERTIES
-      OUTPUT_NAME "${name}_${project}"
+      OUTPUT_NAME "${project}-example-${name}"
       PROJECT_LABEL "(EXAMPLE_${project_upper}) ${name}")
 
     if(ENABLE_SOLUTION_FOLDERS)

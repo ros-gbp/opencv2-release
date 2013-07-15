@@ -1517,12 +1517,69 @@ bool CvSVM::do_train( int svm_type, int sample_count, int var_count, const float
         }
     }
 
+    optimize_linear_svm();
     ok = true;
 
     __END__;
 
     return ok;
 }
+
+
+void CvSVM::optimize_linear_svm()
+{
+    // we optimize only linear SVM: compress all the support vectors into one.
+    if( params.kernel_type != LINEAR )
+        return;
+
+    int class_count = class_labels ? class_labels->cols :
+            params.svm_type == CvSVM::ONE_CLASS ? 1 : 0;
+
+    int i, df_count = class_count > 1 ? class_count*(class_count-1)/2 : 1;
+    CvSVMDecisionFunc* df = decision_func;
+
+    for( i = 0; i < df_count; i++ )
+    {
+        int sv_count = df[i].sv_count;
+        if( sv_count != 1 )
+            break;
+    }
+
+    // if every decision functions uses a single support vector;
+    // it's already compressed. skip it then.
+    if( i == df_count )
+        return;
+
+    int var_count = get_var_count();
+    cv::AutoBuffer<double> vbuf(var_count);
+    double* v = vbuf;
+    float** new_sv = (float**)cvMemStorageAlloc(storage, df_count*sizeof(new_sv[0]));
+
+    for( i = 0; i < df_count; i++ )
+    {
+        new_sv[i] = (float*)cvMemStorageAlloc(storage, var_count*sizeof(new_sv[i][0]));
+        float* dst = new_sv[i];
+        memset(v, 0, var_count*sizeof(v[0]));
+        int j, k, sv_count = df[i].sv_count;
+        for( j = 0; j < sv_count; j++ )
+        {
+            const float* src = class_count > 1 && df[i].sv_index ? sv[df[i].sv_index[j]] : sv[j];
+            double a = df[i].alpha[j];
+            for( k = 0; k < var_count; k++ )
+                v[k] += src[k]*a;
+        }
+        for( k = 0; k < var_count; k++ )
+            dst[k] = (float)v[k];
+        df[i].sv_count = 1;
+        df[i].alpha[0] = 1.;
+        if( class_count > 1 && df[i].sv_index )
+            df[i].sv_index[0] = i;
+    }
+
+    sv = new_sv;
+    sv_total = df_count;
+}
+
 
 bool CvSVM::train( const CvMat* _train_data, const CvMat* _responses,
     const CvMat* _var_idx, const CvMat* _sample_idx, CvSVMParams _params )
@@ -2086,7 +2143,7 @@ float CvSVM::predict( const CvMat* sample, bool returnDFVal ) const
     return result;
 }
 
-struct predict_body_svm {
+struct predict_body_svm : ParallelLoopBody {
     predict_body_svm(const CvSVM* _pointer, float* _result, const CvMat* _samples, CvMat* _results)
     {
         pointer = _pointer;
@@ -2100,9 +2157,9 @@ struct predict_body_svm {
     const CvMat* samples;
     CvMat* results;
 
-    void operator()( const cv::BlockedRange& range ) const
+    void operator()( const cv::Range& range ) const
     {
-        for(int i = range.begin(); i < range.end(); i++ )
+        for(int i = range.start; i < range.end; i++ )
         {
             CvMat sample;
             cvGetRow( samples, &sample, i );
@@ -2118,7 +2175,7 @@ struct predict_body_svm {
 float CvSVM::predict(const CvMat* samples, CV_OUT CvMat* results) const
 {
     float result = 0;
-    cv::parallel_for(cv::BlockedRange(0, samples->rows),
+    cv::parallel_for_(cv::Range(0, samples->rows),
              predict_body_svm(this, &result, samples, results)
     );
     return result;
@@ -2516,6 +2573,8 @@ void CvSVM::read( CvFileStorage* fs, CvFileNode* svm_node )
         CV_NEXT_SEQ_ELEM( df_node->data.seq->elem_size, reader );
     }
 
+    if( cvReadIntByName(fs, svm_node, "optimize_linear", 1) != 0 )
+        optimize_linear_svm();
     create_kernel();
 
     __END__;

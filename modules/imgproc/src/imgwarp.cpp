@@ -1219,8 +1219,6 @@ static void resizeGeneric_( const Mat& src, Mat& dst,
                             const int* yofs, const void* _beta,
                             int xmin, int xmax, int ksize )
 {
-    typedef typename HResize::value_type T;
-    typedef typename HResize::buf_type WT;
     typedef typename HResize::alpha_type AT;
 
     const AT* beta = (const AT*)_beta;
@@ -1740,7 +1738,7 @@ void cv::resize( InputArray _src, OutputArray _dst, Size dsize,
 
 
 #ifdef HAVE_TEGRA_OPTIMIZATION
-    if (tegra::resize(src, dst, inv_scale_x, inv_scale_y, interpolation))
+    if (tegra::resize(src, dst, (float)inv_scale_x, (float)inv_scale_y, interpolation))
         return;
 #endif
 
@@ -3669,7 +3667,7 @@ cv2DRotationMatrix( CvPoint2D32f center, double angle,
                     double scale, CvMat* matrix )
 {
     cv::Mat M0 = cv::cvarrToMat(matrix), M = cv::getRotationMatrix2D(center, angle, scale);
-    CV_Assert( M.size() == M.size() );
+    CV_Assert( M.size() == M0.size() );
     M.convertTo(M0, M0.type());
     return matrix;
 }
@@ -3682,7 +3680,7 @@ cvGetPerspectiveTransform( const CvPoint2D32f* src,
 {
     cv::Mat M0 = cv::cvarrToMat(matrix),
         M = cv::getPerspectiveTransform((const cv::Point2f*)src, (const cv::Point2f*)dst);
-    CV_Assert( M.size() == M.size() );
+    CV_Assert( M.size() == M0.size() );
     M.convertTo(M0, M0.type());
     return matrix;
 }

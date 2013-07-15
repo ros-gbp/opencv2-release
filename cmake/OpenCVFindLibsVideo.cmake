@@ -2,6 +2,15 @@
 #  Detect 3rd-party video IO libraries
 # ----------------------------------------------------------------------------
 
+ocv_clear_vars(HAVE_VFW)
+if (WITH_VFW)
+  TRY_COMPILE(HAVE_VFW
+    "${OPENCV_BINARY_DIR}/CMakeFiles/CMakeTmp"
+    "${OpenCV_SOURCE_DIR}/cmake/checks/vfwtest.cpp"
+    CMAKE_FLAGS "-DLINK_LIBRARIES:STRING=vfw32"
+    OUTPUT_VARIABLE OUTPUT)
+ endif(WITH_VFW)
+
 # --- GStreamer ---
 ocv_clear_vars(HAVE_GSTREAMER)
 if(WITH_GSTREAMER)
@@ -37,7 +46,7 @@ if(WITH_PVAPI)
       set(PVAPI_SDK_SUBDIR x86)
     elseif(X86_64)
       set(PVAPI_SDK_SUBDIR x64)
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES arm)
+    elseif(ARM)
       set(PVAPI_SDK_SUBDIR arm)
     endif()
 
@@ -72,10 +81,33 @@ endif(WITH_GIGEAPI)
 # --- Dc1394 ---
 ocv_clear_vars(HAVE_DC1394 HAVE_DC1394_2)
 if(WITH_1394)
-  CHECK_MODULE(libdc1394-2 HAVE_DC1394_2)
-  if(NOT HAVE_DC1394_2)
-    CHECK_MODULE(libdc1394 HAVE_DC1394)
-  endif()
+  if(WIN32 AND MINGW)
+      find_path(CMU1394_INCLUDE_PATH "/1394common.h"
+                PATH_SUFFIXES include
+                DOC "The path to cmu1394 headers")
+      find_path(DC1394_2_INCLUDE_PATH "/dc1394/dc1394.h"
+                PATH_SUFFIXES include
+                DOC "The path to DC1394 2.x headers")
+      if(CMU1394_INCLUDE_PATH AND DC1394_2_INCLUDE_PATH)
+        set(CMU1394_LIB_DIR  "${CMU1394_INCLUDE_PATH}/../lib"  CACHE PATH "Full path of CMU1394 library directory")
+        set(DC1394_2_LIB_DIR "${DC1394_2_INCLUDE_PATH}/../lib" CACHE PATH "Full path of DC1394 2.x library directory")
+        if(EXISTS "${CMU1394_LIB_DIR}/lib1394camera.a" AND EXISTS "${DC1394_2_LIB_DIR}/libdc1394.a")
+          set(HAVE_DC1394_2 TRUE)
+        endif()
+      endif()
+      if(HAVE_DC1394_2)
+        ocv_parse_pkg("libdc1394-2" "${DC1394_2_LIB_DIR}/pkgconfig" "")
+        ocv_include_directories(${DC1394_2_INCLUDE_PATH})
+        set(HIGHGUI_LIBRARIES ${HIGHGUI_LIBRARIES}
+            "${DC1394_2_LIB_DIR}/libdc1394.a"
+            "${CMU1394_LIB_DIR}/lib1394camera.a")
+      endif(HAVE_DC1394_2)
+  else(WIN32 AND MINGW)
+    CHECK_MODULE(libdc1394-2 HAVE_DC1394_2)
+    if(NOT HAVE_DC1394_2)
+      CHECK_MODULE(libdc1394 HAVE_DC1394)
+    endif()
+  endif(WIN32 AND MINGW)
 endif(WITH_1394)
 
 # --- xine ---
@@ -111,7 +143,7 @@ endif(WITH_XIMEA)
 # --- FFMPEG ---
 ocv_clear_vars(HAVE_FFMPEG HAVE_FFMPEG_CODEC HAVE_FFMPEG_FORMAT HAVE_FFMPEG_UTIL HAVE_FFMPEG_SWSCALE HAVE_GENTOO_FFMPEG HAVE_FFMPEG_FFMPEG)
 if(WITH_FFMPEG)
-  if(WIN32)
+  if(WIN32 AND NOT ARM)
     include("${OpenCV_SOURCE_DIR}/3rdparty/ffmpeg/ffmpeg_version.cmake")
   elseif(UNIX)
     CHECK_MODULE(libavcodec HAVE_FFMPEG_CODEC)
@@ -175,15 +207,20 @@ if(WITH_FFMPEG)
   endif(APPLE)
 endif(WITH_FFMPEG)
 
-# --- VideoInput ---
-if(WITH_VIDEOINPUT)
+# --- VideoInput/DirectShow ---
+if(WITH_DSHOW)
   # always have VideoInput on Windows
-  set(HAVE_VIDEOINPUT 1)
-endif(WITH_VIDEOINPUT)
+  set(HAVE_DSHOW 1)
+endif(WITH_DSHOW)
+
+# --- VideoInput/Microsoft Media Foundation ---
+if(WITH_MSMF)
+  check_include_file(Mfapi.h HAVE_MSMF)
+endif(WITH_MSMF)
 
 # --- Extra HighGUI libs on Windows ---
 if(WIN32)
-  list(APPEND HIGHGUI_LIBRARIES comctl32 gdi32 ole32 vfw32)
+  list(APPEND HIGHGUI_LIBRARIES comctl32 gdi32 ole32 setupapi ws2_32 vfw32)
   if(MINGW64)
     list(APPEND HIGHGUI_LIBRARIES avifil32 avicap32 winmm msvfw32)
     list(REMOVE_ITEM HIGHGUI_LIBRARIES vfw32)
