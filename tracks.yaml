@@ -17,7 +17,7 @@ tracks:
     release_tag: :{ask}
     ros_distro: groovy
     vcs_type: git
-    vcs_uri: https://github.com/Itseez/opencv.git
+    vcs_uri: /home/vrabaud/software/opencv
     version: :{ask}
   hydro:
     actions:
