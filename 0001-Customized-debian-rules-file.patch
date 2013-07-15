@@ -4,13 +4,13 @@ Date: Wed, 13 Mar 2013 11:08:16 -0700
 Subject: [PATCH] Customized debian rules file
 
 ---
- debian/rules.cmake.em |   25 +++++++++++++++++++++----
+ debian/rules.em |   25 +++++++++++++++++++++----
  1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/debian/rules.cmake.em b/debian/rules.cmake.em
+diff --git a/debian/rules.em b/debian/rules.em
 index d45dd5f..37957ce 100644
---- a/debian/rules.cmake.em
-+++ b/debian/rules.cmake.em
+--- a/debian/rules.em
++++ b/debian/rules.em
 @@ -16,6 +16,22 @@ export DH_OPTIONS=-v --buildsystem=cmake
  export LDFLAGS=
  export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
