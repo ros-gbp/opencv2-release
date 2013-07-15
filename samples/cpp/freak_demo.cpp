@@ -56,7 +56,7 @@ static void help( char** argv )
 }
 
 int main( int argc, char** argv ) {
-    // check http://opencv.itseez.com/doc/tutorials/features2d/table_of_content_features2d/table_of_content_features2d.html
+    // check http://docs.opencv.org/doc/tutorials/features2d/table_of_content_features2d/table_of_content_features2d.html
     // for OpenCV general detection/matching framework details
 
     if( argc != 3 ) {
@@ -72,7 +72,7 @@ int main( int argc, char** argv ) {
     }
 
     Mat imgB = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE );
-    if( !imgA.data ) {
+    if( !imgB.data ) {
         std::cout << " --(!) Error reading image " << argv[2] << std::endl;
         return -1;
     }

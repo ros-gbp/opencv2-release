@@ -45,9 +45,25 @@
 
 #include "precomp.hpp"
 
-#ifndef CL_VERSION_1_2
-#define CL_VERSION_1_2 0
+#ifdef __GNUC__
+#if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 402
+#define GCC_DIAG_STR(s) #s
+#define GCC_DIAG_JOINSTR(x,y) GCC_DIAG_STR(x ## y)
+# define GCC_DIAG_DO_PRAGMA(x) _Pragma (#x)
+# define GCC_DIAG_PRAGMA(x) GCC_DIAG_DO_PRAGMA(GCC diagnostic x)
+# if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 406
+#  define GCC_DIAG_OFF(x) GCC_DIAG_PRAGMA(push) \
+GCC_DIAG_PRAGMA(ignored GCC_DIAG_JOINSTR(-W,x))
+#  define GCC_DIAG_ON(x) GCC_DIAG_PRAGMA(pop)
+# else
+#  define GCC_DIAG_OFF(x) GCC_DIAG_PRAGMA(ignored GCC_DIAG_JOINSTR(-W,x))
+#  define GCC_DIAG_ON(x)  GCC_DIAG_PRAGMA(warning GCC_DIAG_JOINSTR(-W,x))
+# endif
+#else
+# define GCC_DIAG_OFF(x)
+# define GCC_DIAG_ON(x)
 #endif
+#endif /* __GNUC__ */
 
 using namespace std;
 
@@ -124,13 +140,16 @@ namespace cv
                                   build_options, finish_mode);
         }
 
-       cl_mem bindTexture(const oclMat &mat)
+#ifdef __GNUC__
+        GCC_DIAG_OFF(deprecated-declarations)
+#endif
+        cl_mem bindTexture(const oclMat &mat)
         {
             cl_mem texture;
             cl_image_format format;
             int err;
             int depth    = mat.depth();
-            int channels = mat.channels();
+            int channels = mat.oclchannels();
 
             switch(depth)
             {
@@ -159,33 +178,40 @@ namespace cv
                 format.image_channel_order     = CL_RGBA;
                 break;
             default:
-                CV_Error(-1, "Image forma is not supported");
+                CV_Error(-1, "Image format is not supported");
                 break;
             }
-#if CL_VERSION_1_2
-            cl_image_desc desc;
-            desc.image_type       = CL_MEM_OBJECT_IMAGE2D;
-            desc.image_width      = mat.cols;
-            desc.image_height     = mat.rows;
-            desc.image_depth      = 0;
-            desc.image_array_size = 1;
-            desc.image_row_pitch  = 0;
-            desc.image_slice_pitch = 0;
-            desc.buffer           = NULL;
-            desc.num_mip_levels   = 0;
-            desc.num_samples      = 0;
-            texture = clCreateImage((cl_context)mat.clCxt->oclContext(), CL_MEM_READ_WRITE, &format, &desc, NULL, &err);
-#else
-            texture = clCreateImage2D(
-                (cl_context)mat.clCxt->oclContext(),
-                CL_MEM_READ_WRITE,
-                &format,
-                mat.cols,
-                mat.rows,
-                0,
-                NULL,
-                &err);
+#ifdef CL_VERSION_1_2
+            //this enables backwards portability to
+            //run on OpenCL 1.1 platform if library binaries are compiled with OpenCL 1.2 support
+            if(Context::getContext()->supportsFeature(Context::CL_VER_1_2))
+            {
+                cl_image_desc desc;
+                desc.image_type       = CL_MEM_OBJECT_IMAGE2D;
+                desc.image_width      = mat.cols;
+                desc.image_height     = mat.rows;
+                desc.image_depth      = 0;
+                desc.image_array_size = 1;
+                desc.image_row_pitch  = 0;
+                desc.image_slice_pitch = 0;
+                desc.buffer           = NULL;
+                desc.num_mip_levels   = 0;
+                desc.num_samples      = 0;
+                texture = clCreateImage((cl_context)mat.clCxt->oclContext(), CL_MEM_READ_WRITE, &format, &desc, NULL, &err);            
+            }
+            else
 #endif
+            {
+                texture = clCreateImage2D(
+                    (cl_context)mat.clCxt->oclContext(),
+                    CL_MEM_READ_WRITE,
+                    &format,
+                    mat.cols,
+                    mat.rows,
+                    0,
+                    NULL,
+                    &err);
+            }
             size_t origin[] = { 0, 0, 0 };
             size_t region[] = { mat.cols, mat.rows, 1 };
 
@@ -198,7 +224,7 @@ namespace cv
                 clEnqueueCopyBufferRect((cl_command_queue)mat.clCxt->oclCommandQueue(), (cl_mem)mat.data, devData, origin, origin,
                     regin, mat.step, 0, mat.cols * mat.elemSize(), 0, 0, NULL, NULL);
                 clFlush((cl_command_queue)mat.clCxt->oclCommandQueue()); 
-           }
+            }
             else
             {
                 devData = (cl_mem)mat.data;
@@ -214,7 +240,14 @@ namespace cv
             openCLSafeCall(err);
             return texture;
         }
+#ifdef __GNUC__
+        GCC_DIAG_ON(deprecated-declarations)
+#endif
 
+        Ptr<TextureCL> bindTexturePtr(const oclMat &mat)
+        {
+            return Ptr<TextureCL>(new TextureCL(bindTexture(mat), mat.rows, mat.cols, mat.type()));
+        }
         void releaseTexture(cl_mem& texture)
         {
             openCLFree(texture);
