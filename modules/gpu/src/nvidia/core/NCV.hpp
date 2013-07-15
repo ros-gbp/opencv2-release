@@ -1,6 +1,6 @@
 /*M///////////////////////////////////////////////////////////////////////////////////////
 //
-// IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
 //
 //  By downloading, copying, installing or using the software you agree to this license.
 //  If you do not agree to this license, do not download, install,
@@ -10,7 +10,8 @@
 //                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2009-2010, NVIDIA Corporation, all rights reserved.
+// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -129,7 +130,7 @@ typedef                int Ncv32s;
 typedef       unsigned int Ncv32u;
 typedef              short Ncv16s;
 typedef     unsigned short Ncv16u;
-typedef               char Ncv8s;
+typedef        signed char Ncv8s;
 typedef      unsigned char Ncv8u;
 typedef              float Ncv32f;
 typedef             double Ncv64f;

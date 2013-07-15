@@ -41,7 +41,7 @@
 
 #include "precomp.hpp"
 
-#if (defined WIN32 || defined _WIN32) && defined HAVE_VIDEOINPUT
+#if (defined WIN32 || defined _WIN32) && defined HAVE_DSHOW
 
 /*
    DirectShow-based Video Capturing module is based on
@@ -3100,6 +3100,7 @@ HRESULT videoInput::routeCrossbar(ICaptureGraphBuilder2 **ppBuild, IBaseFilter *
     return hr;
 }
 
+
 /********************* Capturing video from camera via DirectShow *********************/
 
 class CvCaptureCAM_DShow : public CvCapture
@@ -3194,8 +3195,10 @@ IplImage* CvCaptureCAM_DShow::retrieveFrame(int)
         frame = cvCreateImage( cvSize(w,h), 8, 3 );
     }
 
-    VI.getPixels( index, (uchar*)frame->imageData, false, true );
-    return frame;
+    if (VI.getPixels( index, (uchar*)frame->imageData, false, true ))
+        return frame;
+    else
+        return NULL;
 }
 
 double CvCaptureCAM_DShow::getProperty( int property_id )

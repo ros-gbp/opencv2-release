@@ -1,6 +1,6 @@
 /*M///////////////////////////////////////////////////////////////////////////////////////
 //
-// IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
 //
 //  By downloading, copying, installing or using the software you agree to this license.
 //  If you do not agree to this license, do not download, install,
@@ -10,7 +10,8 @@
 //                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2009-2010, NVIDIA Corporation, all rights reserved.
+// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -50,7 +51,7 @@ template<typename TBase> inline __host__ __device__ TBase _pixMaxVal();
 template<> static inline __host__ __device__ Ncv8u  _pixMaxVal<Ncv8u>()  {return UCHAR_MAX;}
 template<> static inline __host__ __device__ Ncv16u _pixMaxVal<Ncv16u>() {return USHRT_MAX;}
 template<> static inline __host__ __device__ Ncv32u _pixMaxVal<Ncv32u>() {return  UINT_MAX;}
-template<> static inline __host__ __device__ Ncv8s  _pixMaxVal<Ncv8s>()  {return  CHAR_MAX;}
+template<> static inline __host__ __device__ Ncv8s  _pixMaxVal<Ncv8s>()  {return  SCHAR_MAX;}
 template<> static inline __host__ __device__ Ncv16s _pixMaxVal<Ncv16s>() {return  SHRT_MAX;}
 template<> static inline __host__ __device__ Ncv32s _pixMaxVal<Ncv32s>() {return   INT_MAX;}
 template<> static inline __host__ __device__ Ncv32f _pixMaxVal<Ncv32f>() {return   FLT_MAX;}
@@ -60,7 +61,7 @@ template<typename TBase> inline __host__ __device__ TBase _pixMinVal();
 template<> static inline __host__ __device__ Ncv8u  _pixMinVal<Ncv8u>()  {return 0;}
 template<> static inline __host__ __device__ Ncv16u _pixMinVal<Ncv16u>() {return 0;}
 template<> static inline __host__ __device__ Ncv32u _pixMinVal<Ncv32u>() {return 0;}
-template<> static inline __host__ __device__ Ncv8s  _pixMinVal<Ncv8s>()  {return CHAR_MIN;}
+template<> static inline __host__ __device__ Ncv8s  _pixMinVal<Ncv8s>()  {return SCHAR_MIN;}
 template<> static inline __host__ __device__ Ncv16s _pixMinVal<Ncv16s>() {return SHRT_MIN;}
 template<> static inline __host__ __device__ Ncv32s _pixMinVal<Ncv32s>() {return INT_MIN;}
 template<> static inline __host__ __device__ Ncv32f _pixMinVal<Ncv32f>() {return FLT_MIN;}

@@ -7,10 +7,11 @@
 //  copy or use the software.
 //
 //
-//                        Intel License Agreement
+//                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2000, Intel Corporation, all rights reserved.
+// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,7 +24,7 @@
 //     this list of conditions and the following disclaimer in the documentation
 //     and/or other materials provided with the distribution.
 //
-//   * The name of Intel Corporation may not be used to endorse or promote products
+//   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
 //
 // This software is provided by the copyright holders and contributors "as is" and
@@ -42,6 +43,8 @@
 #include "test_precomp.hpp"
 
 #ifdef HAVE_CUDA
+
+using namespace cvtest;
 
 namespace
 {
@@ -468,8 +471,7 @@ INSTANTIATE_TEST_CASE_P(GPU_Filter, Dilate, testing::Combine(
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // MorphEx
 
-CV_ENUM(MorphOp, cv::MORPH_OPEN, cv::MORPH_CLOSE, cv::MORPH_GRADIENT, cv::MORPH_TOPHAT, cv::MORPH_BLACKHAT)
-#define ALL_MORPH_OPS testing::Values(MorphOp(cv::MORPH_OPEN), MorphOp(cv::MORPH_CLOSE), MorphOp(cv::MORPH_GRADIENT), MorphOp(cv::MORPH_TOPHAT), MorphOp(cv::MORPH_BLACKHAT))
+CV_ENUM(MorphOp, MORPH_OPEN, MORPH_CLOSE, MORPH_GRADIENT, MORPH_TOPHAT, MORPH_BLACKHAT)
 
 PARAM_TEST_CASE(MorphEx, cv::gpu::DeviceInfo, cv::Size, MatType, MorphOp, Anchor, Iterations, UseRoi)
 {
@@ -515,7 +517,7 @@ INSTANTIATE_TEST_CASE_P(GPU_Filter, MorphEx, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     testing::Values(MatType(CV_8UC1), MatType(CV_8UC4)),
-    ALL_MORPH_OPS,
+    MorphOp::all(),
     testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(Iterations(1), Iterations(2), Iterations(3)),
     WHOLE_SUBMAT));

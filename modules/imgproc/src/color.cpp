@@ -2744,8 +2744,18 @@ const int ITUR_BT_601_CVG = -852492;
 const int ITUR_BT_601_CVR = 1673527;
 const int ITUR_BT_601_SHIFT = 20;
 
+// Coefficients for RGB to YUV420p conversion
+const int ITUR_BT_601_CRY =  269484;
+const int ITUR_BT_601_CGY =  528482;
+const int ITUR_BT_601_CBY =  102760;
+const int ITUR_BT_601_CRU = -155188;
+const int ITUR_BT_601_CGU = -305135;
+const int ITUR_BT_601_CBU =  460324;
+const int ITUR_BT_601_CGV = -385875;
+const int ITUR_BT_601_CBV = -74448;
+
 template<int bIdx, int uIdx>
-struct YUV420sp2RGB888Invoker
+struct YUV420sp2RGB888Invoker : ParallelLoopBody
 {
     Mat* dst;
     const uchar* my1, *muv;
@@ -2754,10 +2764,10 @@ struct YUV420sp2RGB888Invoker
     YUV420sp2RGB888Invoker(Mat* _dst, int _stride, const uchar* _y1, const uchar* _uv)
         : dst(_dst), my1(_y1), muv(_uv), width(_dst->cols), stride(_stride) {}
 
-    void operator()(const BlockedRange& range) const
+    void operator()(const Range& range) const
     {
-        int rangeBegin = range.begin() * 2;
-        int rangeEnd = range.end() * 2;
+        int rangeBegin = range.start * 2;
+        int rangeEnd = range.end * 2;
 
         //R = 1.164(Y - 16) + 1.596(V - 128)
         //G = 1.164(Y - 16) - 0.813(V - 128) - 0.391(U - 128)
@@ -2814,7 +2824,7 @@ struct YUV420sp2RGB888Invoker
 };
 
 template<int bIdx, int uIdx>
-struct YUV420sp2RGBA8888Invoker
+struct YUV420sp2RGBA8888Invoker : ParallelLoopBody
 {
     Mat* dst;
     const uchar* my1, *muv;
@@ -2823,10 +2833,10 @@ struct YUV420sp2RGBA8888Invoker
     YUV420sp2RGBA8888Invoker(Mat* _dst, int _stride, const uchar* _y1, const uchar* _uv)
         : dst(_dst), my1(_y1), muv(_uv), width(_dst->cols), stride(_stride) {}
 
-    void operator()(const BlockedRange& range) const
+    void operator()(const Range& range) const
     {
-        int rangeBegin = range.begin() * 2;
-        int rangeEnd = range.end() * 2;
+        int rangeBegin = range.start * 2;
+        int rangeEnd = range.end * 2;
 
         //R = 1.164(Y - 16) + 1.596(V - 128)
         //G = 1.164(Y - 16) - 0.813(V - 128) - 0.391(U - 128)
@@ -2887,7 +2897,7 @@ struct YUV420sp2RGBA8888Invoker
 };
 
 template<int bIdx>
-struct YUV420p2RGB888Invoker
+struct YUV420p2RGB888Invoker : ParallelLoopBody
 {
     Mat* dst;
     const uchar* my1, *mu, *mv;
@@ -2897,19 +2907,19 @@ struct YUV420p2RGB888Invoker
     YUV420p2RGB888Invoker(Mat* _dst, int _stride, const uchar* _y1, const uchar* _u, const uchar* _v, int _ustepIdx, int _vstepIdx)
         : dst(_dst), my1(_y1), mu(_u), mv(_v), width(_dst->cols), stride(_stride), ustepIdx(_ustepIdx), vstepIdx(_vstepIdx) {}
 
-    void operator()(const BlockedRange& range) const
+    void operator()(const Range& range) const
     {
-        const int rangeBegin = range.begin() * 2;
-        const int rangeEnd = range.end() * 2;
+        const int rangeBegin = range.start * 2;
+        const int rangeEnd = range.end * 2;
 
         size_t uvsteps[2] = {width/2, stride - width/2};
         int usIdx = ustepIdx, vsIdx = vstepIdx;
 
         const uchar* y1 = my1 + rangeBegin * stride;
-        const uchar* u1 = mu + (range.begin() / 2) * stride;
-        const uchar* v1 = mv + (range.begin() / 2) * stride;
+        const uchar* u1 = mu + (range.start / 2) * stride;
+        const uchar* v1 = mv + (range.start / 2) * stride;
 
-        if(range.begin() % 2 == 1)
+        if(range.start % 2 == 1)
         {
             u1 += uvsteps[(usIdx++) & 1];
             v1 += uvsteps[(vsIdx++) & 1];
@@ -2955,7 +2965,7 @@ struct YUV420p2RGB888Invoker
 };
 
 template<int bIdx>
-struct YUV420p2RGBA8888Invoker
+struct YUV420p2RGBA8888Invoker : ParallelLoopBody
 {
     Mat* dst;
     const uchar* my1, *mu, *mv;
@@ -2965,19 +2975,19 @@ struct YUV420p2RGBA8888Invoker
     YUV420p2RGBA8888Invoker(Mat* _dst, int _stride, const uchar* _y1, const uchar* _u, const uchar* _v, int _ustepIdx, int _vstepIdx)
         : dst(_dst), my1(_y1), mu(_u), mv(_v), width(_dst->cols), stride(_stride), ustepIdx(_ustepIdx), vstepIdx(_vstepIdx) {}
 
-    void operator()(const BlockedRange& range) const
+    void operator()(const Range& range) const
     {
-        int rangeBegin = range.begin() * 2;
-        int rangeEnd = range.end() * 2;
+        int rangeBegin = range.start * 2;
+        int rangeEnd = range.end * 2;
 
         size_t uvsteps[2] = {width/2, stride - width/2};
         int usIdx = ustepIdx, vsIdx = vstepIdx;
 
         const uchar* y1 = my1 + rangeBegin * stride;
-        const uchar* u1 = mu + (range.begin() / 2) * stride;
-        const uchar* v1 = mv + (range.begin() / 2) * stride;
+        const uchar* u1 = mu + (range.start / 2) * stride;
+        const uchar* v1 = mv + (range.start / 2) * stride;
 
-        if(range.begin() % 2 == 1)
+        if(range.start % 2 == 1)
         {
             u1 += uvsteps[(usIdx++) & 1];
             v1 += uvsteps[(vsIdx++) & 1];
@@ -3032,54 +3042,124 @@ template<int bIdx, int uIdx>
 inline void cvtYUV420sp2RGB(Mat& _dst, int _stride, const uchar* _y1, const uchar* _uv)
 {
     YUV420sp2RGB888Invoker<bIdx, uIdx> converter(&_dst, _stride, _y1,  _uv);
-#ifdef HAVE_TBB
     if (_dst.total() >= MIN_SIZE_FOR_PARALLEL_YUV420_CONVERSION)
-        parallel_for(BlockedRange(0, _dst.rows/2), converter);
+        parallel_for_(Range(0, _dst.rows/2), converter);
     else
-#endif
-        converter(BlockedRange(0, _dst.rows/2));
+        converter(Range(0, _dst.rows/2));
 }
 
 template<int bIdx, int uIdx>
 inline void cvtYUV420sp2RGBA(Mat& _dst, int _stride, const uchar* _y1, const uchar* _uv)
 {
     YUV420sp2RGBA8888Invoker<bIdx, uIdx> converter(&_dst, _stride, _y1,  _uv);
-#ifdef HAVE_TBB
     if (_dst.total() >= MIN_SIZE_FOR_PARALLEL_YUV420_CONVERSION)
-        parallel_for(BlockedRange(0, _dst.rows/2), converter);
+        parallel_for_(Range(0, _dst.rows/2), converter);
     else
-#endif
-        converter(BlockedRange(0, _dst.rows/2));
+        converter(Range(0, _dst.rows/2));
 }
 
 template<int bIdx>
 inline void cvtYUV420p2RGB(Mat& _dst, int _stride, const uchar* _y1, const uchar* _u, const uchar* _v, int ustepIdx, int vstepIdx)
 {
     YUV420p2RGB888Invoker<bIdx> converter(&_dst, _stride, _y1,  _u, _v, ustepIdx, vstepIdx);
-#ifdef HAVE_TBB
     if (_dst.total() >= MIN_SIZE_FOR_PARALLEL_YUV420_CONVERSION)
-        parallel_for(BlockedRange(0, _dst.rows/2), converter);
+        parallel_for_(Range(0, _dst.rows/2), converter);
     else
-#endif
-        converter(BlockedRange(0, _dst.rows/2));
+        converter(Range(0, _dst.rows/2));
 }
 
 template<int bIdx>
 inline void cvtYUV420p2RGBA(Mat& _dst, int _stride, const uchar* _y1, const uchar* _u, const uchar* _v, int ustepIdx, int vstepIdx)
 {
     YUV420p2RGBA8888Invoker<bIdx> converter(&_dst, _stride, _y1,  _u, _v, ustepIdx, vstepIdx);
-#ifdef HAVE_TBB
     if (_dst.total() >= MIN_SIZE_FOR_PARALLEL_YUV420_CONVERSION)
-        parallel_for(BlockedRange(0, _dst.rows/2), converter);
+        parallel_for_(Range(0, _dst.rows/2), converter);
     else
-#endif
-        converter(BlockedRange(0, _dst.rows/2));
+        converter(Range(0, _dst.rows/2));
+}
+
+///////////////////////////////////// RGB -> YUV420p /////////////////////////////////////
+
+template<int bIdx>
+struct RGB888toYUV420pInvoker: public ParallelLoopBody
+{
+    RGB888toYUV420pInvoker( const Mat& src, Mat* dst, const int uIdx )
+        : src_(src),
+          dst_(dst),
+          uIdx_(uIdx) { }
+
+    void operator()(const Range& rowRange) const
+    {
+        const int w = src_.cols;
+        const int h = src_.rows;
+
+        const int cn = src_.channels();
+        for( int i = rowRange.start; i < rowRange.end; i++ )
+        {
+            const uchar* row0 = src_.ptr<uchar>(2 * i);
+            const uchar* row1 = src_.ptr<uchar>(2 * i + 1);
+
+            uchar* y = dst_->ptr<uchar>(2*i);
+            uchar* u = dst_->ptr<uchar>(h + i/2) + (i % 2) * (w/2);
+            uchar* v = dst_->ptr<uchar>(h + (i + h/2)/2) + ((i + h/2) % 2) * (w/2);
+            if( uIdx_ == 2 ) std::swap(u, v);
+
+            for( int j = 0, k = 0; j < w * cn; j += 2 * cn, k++ )
+            {
+                int r00 = row0[2-bIdx + j];      int g00 = row0[1 + j];      int b00 = row0[bIdx + j];
+                int r01 = row0[2-bIdx + cn + j]; int g01 = row0[1 + cn + j]; int b01 = row0[bIdx + cn + j];
+                int r10 = row1[2-bIdx + j];      int g10 = row1[1 + j];      int b10 = row1[bIdx + j];
+                int r11 = row1[2-bIdx + cn + j]; int g11 = row1[1 + cn + j]; int b11 = row1[bIdx + cn + j];
+
+                const int shifted16 = (16 << ITUR_BT_601_SHIFT);
+                const int halfShift = (1 << (ITUR_BT_601_SHIFT - 1));
+                int y00 = ITUR_BT_601_CRY * r00 + ITUR_BT_601_CGY * g00 + ITUR_BT_601_CBY * b00 + halfShift + shifted16;
+                int y01 = ITUR_BT_601_CRY * r01 + ITUR_BT_601_CGY * g01 + ITUR_BT_601_CBY * b01 + halfShift + shifted16;
+                int y10 = ITUR_BT_601_CRY * r10 + ITUR_BT_601_CGY * g10 + ITUR_BT_601_CBY * b10 + halfShift + shifted16;
+                int y11 = ITUR_BT_601_CRY * r11 + ITUR_BT_601_CGY * g11 + ITUR_BT_601_CBY * b11 + halfShift + shifted16;
+
+                y[2*k + 0]            = saturate_cast<uchar>(y00 >> ITUR_BT_601_SHIFT);
+                y[2*k + 1]            = saturate_cast<uchar>(y01 >> ITUR_BT_601_SHIFT);
+                y[2*k + dst_->step + 0] = saturate_cast<uchar>(y10 >> ITUR_BT_601_SHIFT);
+                y[2*k + dst_->step + 1] = saturate_cast<uchar>(y11 >> ITUR_BT_601_SHIFT);
+
+                const int shifted128 = (128 << ITUR_BT_601_SHIFT);
+                int u00 = ITUR_BT_601_CRU * r00 + ITUR_BT_601_CGU * g00 + ITUR_BT_601_CBU * b00 + halfShift + shifted128;
+                int v00 = ITUR_BT_601_CBU * r00 + ITUR_BT_601_CGV * g00 + ITUR_BT_601_CBV * b00 + halfShift + shifted128;
+
+                u[k] = saturate_cast<uchar>(u00 >> ITUR_BT_601_SHIFT);
+                v[k] = saturate_cast<uchar>(v00 >> ITUR_BT_601_SHIFT);
+            }
+        }
+    }
+
+    static bool isFit( const Mat& src )
+    {
+        return (src.total() >= 320*240);
+    }
+
+private:
+    RGB888toYUV420pInvoker& operator=(const RGB888toYUV420pInvoker&);
+
+    const Mat& src_;
+    Mat* const dst_;
+    const int uIdx_;
+};
+
+template<int bIdx, int uIdx>
+static void cvtRGBtoYUV420p(const Mat& src, Mat& dst)
+{
+    RGB888toYUV420pInvoker<bIdx> colorConverter(src, &dst, uIdx);
+    if( RGB888toYUV420pInvoker<bIdx>::isFit(src) )
+        parallel_for_(Range(0, src.rows/2), colorConverter);
+    else
+        colorConverter(Range(0, src.rows/2));
 }
 
 ///////////////////////////////////// YUV422 -> RGB /////////////////////////////////////
 
 template<int bIdx, int uIdx, int yIdx>
-struct YUV422toRGB888Invoker
+struct YUV422toRGB888Invoker : ParallelLoopBody
 {
     Mat* dst;
     const uchar* src;
@@ -3088,10 +3168,10 @@ struct YUV422toRGB888Invoker
     YUV422toRGB888Invoker(Mat* _dst, int _stride, const uchar* _yuv)
         : dst(_dst), src(_yuv), width(_dst->cols), stride(_stride) {}
 
-    void operator()(const BlockedRange& range) const
+    void operator()(const Range& range) const
     {
-        int rangeBegin = range.begin();
-        int rangeEnd = range.end();
+        int rangeBegin = range.start;
+        int rangeEnd = range.end;
 
         const int uidx = 1 - yIdx + uIdx * 2;
         const int vidx = (2 + uidx) % 4;
@@ -3125,7 +3205,7 @@ struct YUV422toRGB888Invoker
 };
 
 template<int bIdx, int uIdx, int yIdx>
-struct YUV422toRGBA8888Invoker
+struct YUV422toRGBA8888Invoker : ParallelLoopBody
 {
     Mat* dst;
     const uchar* src;
@@ -3134,10 +3214,10 @@ struct YUV422toRGBA8888Invoker
     YUV422toRGBA8888Invoker(Mat* _dst, int _stride, const uchar* _yuv)
         : dst(_dst), src(_yuv), width(_dst->cols), stride(_stride) {}
 
-    void operator()(const BlockedRange& range) const
+    void operator()(const Range& range) const
     {
-        int rangeBegin = range.begin();
-        int rangeEnd = range.end();
+        int rangeBegin = range.start;
+        int rangeEnd = range.end;
 
         const int uidx = 1 - yIdx + uIdx * 2;
         const int vidx = (2 + uidx) % 4;
@@ -3178,24 +3258,20 @@ template<int bIdx, int uIdx, int yIdx>
 inline void cvtYUV422toRGB(Mat& _dst, int _stride, const uchar* _yuv)
 {
     YUV422toRGB888Invoker<bIdx, uIdx, yIdx> converter(&_dst, _stride, _yuv);
-#ifdef HAVE_TBB
     if (_dst.total() >= MIN_SIZE_FOR_PARALLEL_YUV422_CONVERSION)
-        parallel_for(BlockedRange(0, _dst.rows), converter);
+        parallel_for_(Range(0, _dst.rows), converter);
     else
-#endif
-        converter(BlockedRange(0, _dst.rows));
+        converter(Range(0, _dst.rows));
 }
 
 template<int bIdx, int uIdx, int yIdx>
 inline void cvtYUV422toRGBA(Mat& _dst, int _stride, const uchar* _yuv)
 {
     YUV422toRGBA8888Invoker<bIdx, uIdx, yIdx> converter(&_dst, _stride, _yuv);
-#ifdef HAVE_TBB
     if (_dst.total() >= MIN_SIZE_FOR_PARALLEL_YUV422_CONVERSION)
-        parallel_for(BlockedRange(0, _dst.rows), converter);
+        parallel_for_(Range(0, _dst.rows), converter);
     else
-#endif
-        converter(BlockedRange(0, _dst.rows));
+        converter(Range(0, _dst.rows));
 }
 
 /////////////////////////// RGBA <-> mRGBA (alpha premultiplied) //////////////
@@ -3713,6 +3789,31 @@ void cv::cvtColor( InputArray _src, OutputArray _dst, int code, int dcn )
                 src(Range(0, dstSz.height), Range::all()).copyTo(dst);
             }
             break;
+        case CV_RGB2YUV_YV12: case CV_BGR2YUV_YV12: case CV_RGBA2YUV_YV12: case CV_BGRA2YUV_YV12:
+        case CV_RGB2YUV_IYUV: case CV_BGR2YUV_IYUV: case CV_RGBA2YUV_IYUV: case CV_BGRA2YUV_IYUV:
+            {
+                if (dcn <= 0) dcn = 1;
+                const int bIdx = (code == CV_BGR2YUV_IYUV || code == CV_BGRA2YUV_IYUV || code == CV_BGR2YUV_YV12 || code == CV_BGRA2YUV_YV12) ? 0 : 2;
+                const int uIdx = (code == CV_BGR2YUV_IYUV || code == CV_BGRA2YUV_IYUV || code == CV_RGB2YUV_IYUV || code == CV_RGBA2YUV_IYUV) ? 1 : 2;
+
+                CV_Assert( (scn == 3 || scn == 4) && depth == CV_8U );
+                CV_Assert( dcn == 1 );
+                CV_Assert( sz.width % 2 == 0 && sz.height % 2 == 0 );
+
+                Size dstSz(sz.width, sz.height / 2 * 3);
+                _dst.create(dstSz, CV_MAKETYPE(depth, dcn));
+                dst = _dst.getMat();
+
+                switch(bIdx + uIdx*10)
+                {
+                    case 10: cvtRGBtoYUV420p<0, 1>(src, dst); break;
+                    case 12: cvtRGBtoYUV420p<2, 1>(src, dst); break;
+                    case 20: cvtRGBtoYUV420p<0, 2>(src, dst); break;
+                    case 22: cvtRGBtoYUV420p<2, 2>(src, dst); break;
+                    default: CV_Error( CV_StsBadFlag, "Unknown/unsupported color conversion code" ); break;
+                };
+            }
+            break;
         case CV_YUV2RGB_UYVY: case CV_YUV2BGR_UYVY: case CV_YUV2RGBA_UYVY: case CV_YUV2BGRA_UYVY:
         case CV_YUV2RGB_YUY2: case CV_YUV2BGR_YUY2: case CV_YUV2RGB_YVYU: case CV_YUV2BGR_YVYU:
         case CV_YUV2RGBA_YUY2: case CV_YUV2BGRA_YUY2: case CV_YUV2RGBA_YVYU: case CV_YUV2BGRA_YVYU:
@@ -3795,7 +3896,7 @@ void cv::cvtColor( InputArray _src, OutputArray _dst, int code, int dcn )
                     CV_Error( CV_StsBadArg, "Unsupported image depth" );
                 }
             }
-            break;
+            break;   
         default:
             CV_Error( CV_StsBadFlag, "Unknown/unsupported color conversion code" );
     }

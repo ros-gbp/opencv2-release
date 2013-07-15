@@ -74,6 +74,7 @@ namespace cv
     }
 }
 
+
 ////////////////////////////////////////////////////////////////////////
 // convert_C3C4
 static void convert_C3C4(const cl_mem &src, oclMat &dst)
@@ -190,7 +191,7 @@ void cv::ocl::oclMat::upload(const Mat &m)
         int pitch = wholeSize.width * 3 * m.elemSize1();
         int tail_padding = m.elemSize1() * 3072;
         int err;
-        cl_mem temp = clCreateBuffer(clCxt->impl->clContext, CL_MEM_READ_WRITE,
+        cl_mem temp = clCreateBuffer((cl_context)clCxt->oclContext(), CL_MEM_READ_WRITE,
                                      (pitch * wholeSize.height + tail_padding - 1) / tail_padding * tail_padding, 0, &err);
         openCLVerifyCall(err);
 
@@ -227,6 +228,34 @@ void cv::ocl::oclMat::upload(const Mat &m)
     //download_channels = m.channels();
 }
 
+cv::ocl::oclMat::operator cv::_InputArray()
+{
+    _InputArray newInputArray;
+    newInputArray.flags = cv::_InputArray::OCL_MAT;
+    newInputArray.obj   = reinterpret_cast<void *>(this);
+    return newInputArray;
+}
+
+cv::ocl::oclMat::operator cv::_OutputArray()
+{
+    _OutputArray newOutputArray;
+    newOutputArray.flags = cv::_InputArray::OCL_MAT;
+    newOutputArray.obj   = reinterpret_cast<void *>(this);
+    return newOutputArray;
+}
+
+cv::ocl::oclMat& cv::ocl::getOclMatRef(InputArray src)
+{
+    CV_Assert(src.flags & cv::_InputArray::OCL_MAT);
+    return *reinterpret_cast<oclMat*>(src.obj);
+}
+
+cv::ocl::oclMat& cv::ocl::getOclMatRef(OutputArray src)
+{
+    CV_Assert(src.flags & cv::_InputArray::OCL_MAT);
+    return *reinterpret_cast<oclMat*>(src.obj);
+}
+
 void cv::ocl::oclMat::download(cv::Mat &m) const
 {
     CV_DbgAssert(!this->empty());
@@ -242,7 +271,7 @@ void cv::ocl::oclMat::download(cv::Mat &m) const
         int pitch = wholecols * 3 * m.elemSize1();
         int tail_padding = m.elemSize1() * 3072;
         int err;
-        cl_mem temp = clCreateBuffer(clCxt->impl->clContext, CL_MEM_READ_WRITE,
+        cl_mem temp = clCreateBuffer((cl_context)clCxt->oclContext(), CL_MEM_READ_WRITE,
                                      (pitch * wholerows + tail_padding - 1) / tail_padding * tail_padding, 0, &err);
         openCLVerifyCall(err);
 
@@ -593,11 +622,16 @@ static void set_to_withoutmask_run(const oclMat &dst, const Scalar &scalar, stri
         CV_Error(CV_StsUnsupportedFormat, "unknown depth");
     }
 #ifdef CL_VERSION_1_2
-    if(dst.offset == 0 && dst.cols == dst.wholecols)
+    //this enables backwards portability to
+    //run on OpenCL 1.1 platform if library binaries are compiled with OpenCL 1.2 support
+    if(Context::getContext()->supportsFeature(Context::CL_VER_1_2) &&
+        dst.offset == 0 && dst.cols == dst.wholecols)
     {
-        clEnqueueFillBuffer(dst.clCxt->impl->clCmdQueue, (cl_mem)dst.data, args[0].second, args[0].first, 0, dst.step * dst.rows, 0, NULL, NULL);
+        clEnqueueFillBuffer((cl_command_queue)dst.clCxt->oclCommandQueue(), 
+            (cl_mem)dst.data, args[0].second, args[0].first, 0, dst.step * dst.rows, 0, NULL, NULL);
     }
     else
+#endif
     {
         args.push_back( make_pair( sizeof(cl_mem) , (void *)&dst.data ));
         args.push_back( make_pair( sizeof(cl_int) , (void *)&dst.cols ));
@@ -605,17 +639,8 @@ static void set_to_withoutmask_run(const oclMat &dst, const Scalar &scalar, stri
         args.push_back( make_pair( sizeof(cl_int) , (void *)&step_in_pixel ));
         args.push_back( make_pair( sizeof(cl_int) , (void *)&offset_in_pixel));
         openCLExecuteKernel(dst.clCxt , &operator_setTo, kernelName, globalThreads,
-                            localThreads, args, -1, -1, compile_option);
+            localThreads, args, -1, -1, compile_option);
     }
-#else
-    args.push_back( make_pair( sizeof(cl_mem) , (void *)&dst.data ));
-    args.push_back( make_pair( sizeof(cl_int) , (void *)&dst.cols ));
-    args.push_back( make_pair( sizeof(cl_int) , (void *)&dst.rows ));
-    args.push_back( make_pair( sizeof(cl_int) , (void *)&step_in_pixel ));
-    args.push_back( make_pair( sizeof(cl_int) , (void *)&offset_in_pixel));
-    openCLExecuteKernel(dst.clCxt , &operator_setTo, kernelName, globalThreads,
-                        localThreads, args, -1, -1, compile_option);
-#endif
 }
 
 static void set_to_withmask_run(const oclMat &dst, const Scalar &scalar, const oclMat &mask, string kernelName)

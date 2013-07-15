@@ -28,7 +28,7 @@
 //     derived from this software without specific prior written permission.
 //
 // This software is provided by the copyright holders and contributors "as is" and
-// any express or bpied warranties, including, but not limited to, the bpied
+// any express or implied warranties, including, but not limited to, the implied
 // warranties of merchantability and fitness for a particular purpose are disclaimed.
 // In no event shall the Intel Corporation or contributors be liable for any direct,
 // indirect, incidental, special, exemplary, or consequential damages
@@ -48,6 +48,7 @@
 #include "opencv2/gpu/device/common.hpp"
 #include "opencv2/gpu/device/emulation.hpp"
 #include "opencv2/gpu/device/vec_math.hpp"
+#include "opencv2/gpu/device/functional.hpp"
 #include "opencv2/gpu/device/limits.hpp"
 #include "opencv2/gpu/device/dynamic_smem.hpp"
 
@@ -811,7 +812,7 @@ namespace cv { namespace gpu { namespace device
 
             const int ind = ::atomicAdd(r_sizes + n, 1);
             if (ind < maxSize)
-                r_table(n, ind) = p - templCenter;
+                r_table(n, ind) = saturate_cast<short2>(p - templCenter);
         }
 
         void buildRTable_gpu(const unsigned int* coordList, const float* thetaList, int pointsCount,
@@ -855,7 +856,7 @@ namespace cv { namespace gpu { namespace device
 
             for (int j = 0; j < r_row_size; ++j)
             {
-                short2 c = p - r_row[j];
+                int2 c = p - r_row[j];
 
                 c.x = __float2int_rn(c.x * idp);
                 c.y = __float2int_rn(c.y * idp);

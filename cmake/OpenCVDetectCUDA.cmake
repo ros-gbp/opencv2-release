@@ -26,6 +26,47 @@ if(CUDA_FOUND)
     set(HAVE_CUBLAS 1)
   endif()
 
+  if(${CUDA_VERSION} VERSION_LESS "5.5")
+    find_cuda_helper_libs(npp)
+  else()
+    # hack for CUDA 5.5
+    if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "arm")
+      unset(CUDA_TOOLKIT_INCLUDE CACHE)
+      unset(CUDA_CUDART_LIBRARY CACHE)
+      unset(CUDA_cublas_LIBRARY CACHE)
+      unset(CUDA_cufft_LIBRARY CACHE)
+      unset(CUDA_npp_LIBRARY CACHE)
+
+      if(SOFTFP)
+        set(cuda_arm_path "${CUDA_TOOLKIT_ROOT_DIR}/targets/armv7-linux-gnueabi")
+      else()
+        set(cuda_arm_path "${CUDA_TOOLKIT_ROOT_DIR}/targets/armv7-linux-gnueabihf")
+      endif()
+
+      set(CUDA_TOOLKIT_INCLUDE "${cuda_arm_path}/include" CACHE PATH "include path")
+      set(CUDA_INCLUDE_DIRS ${CUDA_TOOLKIT_INCLUDE})
+
+      set(cuda_arm_library_path "${cuda_arm_path}/lib")
+
+      set(CUDA_CUDART_LIBRARY "${cuda_arm_library_path}/libcudart.so" CACHE FILEPATH "cudart library")
+      set(CUDA_LIBRARIES ${CUDA_CUDART_LIBRARY})
+      set(CUDA_cublas_LIBRARY "${cuda_arm_library_path}/libcublas.so" CACHE FILEPATH "cublas library")
+      set(CUDA_cufft_LIBRARY "${cuda_arm_library_path}/libcufft.so" CACHE FILEPATH "cufft library")
+      set(CUDA_nppc_LIBRARY "${cuda_arm_library_path}/libnppc.so" CACHE FILEPATH "nppc library")
+      set(CUDA_nppi_LIBRARY "${cuda_arm_library_path}/libnppi.so" CACHE FILEPATH "nppi library")
+      set(CUDA_npps_LIBRARY "${cuda_arm_library_path}/libnpps.so" CACHE FILEPATH "npps library")
+      set(CUDA_npp_LIBRARY "${CUDA_nppc_LIBRARY};${CUDA_nppi_LIBRARY};${CUDA_npps_LIBRARY}" CACHE STRING "npp library")
+    else()
+      unset(CUDA_npp_LIBRARY CACHE)
+
+      find_cuda_helper_libs(nppc)
+      find_cuda_helper_libs(nppi)
+      find_cuda_helper_libs(npps)
+
+      set(CUDA_npp_LIBRARY "${CUDA_nppc_LIBRARY};${CUDA_nppi_LIBRARY};${CUDA_npps_LIBRARY}" CACHE STRING "npp library")
+    endif()
+  endif()
+
   if(WITH_NVCUVID)
     find_cuda_helper_libs(nvcuvid)
     set(HAVE_NVCUVID 1)
@@ -57,7 +98,7 @@ if(CUDA_FOUND)
   elseif(CUDA_GENERATION STREQUAL "Kepler")
     set(__cuda_arch_bin "3.0")
   elseif(CUDA_GENERATION STREQUAL "Auto")
-    execute_process( COMMAND "${CUDA_NVCC_EXECUTABLE}" "${OpenCV_SOURCE_DIR}/cmake/OpenCVDetectCudaArch.cu" "--run"
+    execute_process( COMMAND "${CUDA_NVCC_EXECUTABLE}" "${OpenCV_SOURCE_DIR}/cmake/checks/OpenCVDetectCudaArch.cu" "--run"
                      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/"
                      RESULT_VARIABLE _nvcc_res OUTPUT_VARIABLE _nvcc_out
                      ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -136,17 +177,18 @@ if(CUDA_FOUND)
 
   mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_VERBOSE_BUILD CUDA_SDK_ROOT_DIR)
 
-  find_cuda_helper_libs(npp)
-
   macro(ocv_cuda_compile VAR)
     foreach(var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_DEBUG)
       set(${var}_backup_in_cuda_compile_ "${${var}}")
 
-      # we reomove /EHa as it leasd warnings under windows
+      # we remove /EHa as it generates warnings under windows
       string(REPLACE "/EHa" "" ${var} "${${var}}")
 
       # we remove -ggdb3 flag as it leads to preprocessor errors when compiling CUDA files (CUDA 4.1)
       string(REPLACE "-ggdb3" "" ${var} "${${var}}")
+
+      # we remove -Wsign-promo as it generates warnings under linux
+      string(REPLACE "-Wsign-promo" "" ${var} "${${var}}")
     endforeach()
 
     if(BUILD_SHARED_LIBS)
