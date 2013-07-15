@@ -32,6 +32,7 @@ tracks:
     name: upstream
     patches: hydro
     release_inc: '1'
+    release_repo_url: null
     release_tag: :{ask}
     ros_distro: hydro
     vcs_type: git
