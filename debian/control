@@ -1,0 +1,12 @@
+Source: ros-hydro-opencv2
+Section: misc
+Priority: extra
+Maintainer: "Vincent Rabaud <vincent.rabaud@gmail.com>"
+Build-Depends: debhelper (>= 7.0.50~), cmake, ffmpeg, libavcodec-dev, libavformat-dev, libavutil-dev, libgtk2.0-dev, libjasper-dev, libjpeg-dev, libpng12-dev, libswscale-dev, libtiff5-dev, libv4l-dev, python-dev, python-numpy, python-support, zlib1g-dev
+Homepage: http://opencvg.org
+Standards-Version: 3.9.2
+
+Package: ros-hydro-opencv2
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ffmpeg, libavcodec-dev, libavformat-dev, libavutil-dev, libgtk2.0-dev, libjasper-dev, libjpeg-dev, libpng12-dev, libswscale-dev, libtiff5-dev, libv4l-dev, python-dev, python-numpy, python-support, ros-hydro-catkin, zlib1g-dev
+Description: OpenCV
