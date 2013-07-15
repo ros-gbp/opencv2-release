@@ -1,4 +1,4 @@
-From 764c1d226c43a38328e5982497827231611ea6fc Mon Sep 17 00:00:00 2001
+From e2816f078142fa29cd759b71cceffce09a192df2 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sun, 19 May 2013 13:54:35 +0000
 Subject: [PATCH 3/3] do not build the docs by default
