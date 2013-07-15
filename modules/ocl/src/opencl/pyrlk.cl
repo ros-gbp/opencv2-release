@@ -46,289 +46,261 @@
 
 //#pragma OPENCL EXTENSION cl_amd_printf : enable
 
-__kernel void calcSharrDeriv_vertical_C1_D0(__global const uchar* src, int srcStep, int rows, int cols, int cn, __global short* dx_buf, int dx_bufStep, __global short* dy_buf, int dy_bufStep)
-{
-    const int x = get_global_id(0);
-    const int y = get_global_id(1);
-
-    if (y < rows && x < cols * cn)
-    {
-        const uchar src_val0 = (src + (y > 0 ? y-1 : rows > 1 ? 1 : 0) * srcStep)[x];
-        const uchar src_val1 = (src + y * srcStep)[x];
-        const uchar src_val2 = (src + (y < rows-1 ? y+1 : rows > 1 ? rows-2 : 0) * srcStep)[x];
-
-        ((__global short*)((__global char*)dx_buf + y * dx_bufStep / 2))[x] = (src_val0 + src_val2) * 3 + src_val1 * 10;
-        ((__global short*)((__global char*)dy_buf + y * dy_bufStep / 2))[x] = src_val2 - src_val0;
-    }
-}
-
-__kernel void calcSharrDeriv_vertical_C4_D0(__global const uchar* src, int srcStep, int rows, int cols, int cn, __global short* dx_buf, int dx_bufStep, __global short* dy_buf, int dy_bufStep)
-{
-    const int x = get_global_id(0);
-    const int y = get_global_id(1);
-
-    if (y < rows && x < cols * cn)
-    {
-        const uchar src_val0 = (src + (y > 0 ? y - 1 : 1) * srcStep)[x];
-        const uchar src_val1 = (src + y * srcStep)[x];
-        const uchar src_val2 = (src + (y < rows - 1 ? y + 1 : rows - 2) * srcStep)[x];
-
-        ((__global short*)((__global char*)dx_buf + y * dx_bufStep / 2))[x] = (src_val0 + src_val2) * 3 + src_val1 * 10;
-        ((__global short*)((__global char*)dy_buf + y * dy_bufStep / 2))[x] = src_val2 - src_val0;
-    }
-}
-
-__kernel void calcSharrDeriv_horizontal_C1_D0(int rows, int cols, int cn, __global const short* dx_buf, int dx_bufStep, __global const short* dy_buf, int dy_bufStep, __global short* dIdx, int dIdxStep, __global short* dIdy, int dIdyStep)
-{
-    const int x = get_global_id(0);
-    const int y = get_global_id(1);
-
-    const int colsn = cols * cn;
-
-    if (y < rows && x < colsn)
-    {
-        __global const short* dx_buf_row = dx_buf + y * dx_bufStep;
-        __global const short* dy_buf_row = dy_buf + y * dy_bufStep;
-
-        const int xr = x + cn < colsn ? x + cn : (cols - 2) * cn + x + cn - colsn;
-        const int xl = x - cn >= 0 ? x - cn : cn + x;
-
-        ((__global short*)((__global char*)dIdx + y * dIdxStep / 2))[x] = dx_buf_row[xr] - dx_buf_row[xl];
-        ((__global short*)((__global char*)dIdy + y * dIdyStep / 2))[x] = (dy_buf_row[xr] + dy_buf_row[xl]) * 3 + dy_buf_row[x] * 10;
-    }
-}
-
-__kernel void calcSharrDeriv_horizontal_C4_D0(int rows, int cols, int cn, __global const short* dx_buf, int dx_bufStep, __global const short* dy_buf, int dy_bufStep, __global short* dIdx, int dIdxStep, __global short* dIdy, int dIdyStep)
-{
-    const int x = get_global_id(0);
-    const int y = get_global_id(1);
-
-    const int colsn = cols * cn;
-
-    if (y < rows && x < colsn)
-    {
-        __global const short* dx_buf_row = dx_buf + y * dx_bufStep;
-        __global const short* dy_buf_row = dy_buf + y * dy_bufStep;
-
-        const int xr = x + cn < colsn ? x + cn : (cols - 2) * cn + x + cn - colsn;
-        const int xl = x - cn >= 0 ? x - cn : cn + x;
-
-        ((__global short*)((__global char*)dIdx + y * dIdxStep / 2))[x] = dx_buf_row[xr] - dx_buf_row[xl];
-        ((__global short*)((__global char*)dIdy + y * dIdyStep / 2))[x] = (dy_buf_row[xr] + dy_buf_row[xl]) * 3 + dy_buf_row[x] * 10;
-    }
-}
-
-#define W_BITS 14
-#define W_BITS1 14
-
-#define  CV_DESCALE(x, n)     (((x) + (1 << ((n)-1))) >> (n))
-
-int linearFilter_uchar(__global const uchar* src, int srcStep, int cn, float2 pt, int x, int y)
-{
-    int2 ipt;
-    ipt.x = convert_int_sat_rtn(pt.x);
-    ipt.y = convert_int_sat_rtn(pt.y);
-
-    float a = pt.x - ipt.x;
-    float b = pt.y - ipt.y;
-
-    int iw00 = convert_int_sat_rte((1.0f - a) * (1.0f - b) * (1 << W_BITS));
-    int iw01 = convert_int_sat_rte(a * (1.0f - b) * (1 << W_BITS));
-    int iw10 = convert_int_sat_rte((1.0f - a) * b * (1 << W_BITS));
-    int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
-
-    __global const uchar* src_row = src + (ipt.y + y) * srcStep + ipt.x * cn;
-    __global const uchar* src_row1 = src + (ipt.y + y + 1) * srcStep + ipt.x * cn;
-
-    return CV_DESCALE(src_row[x] * iw00 + src_row[x + cn] * iw01 + src_row1[x] * iw10 + src_row1[x + cn] * iw11, W_BITS1 - 5);
-}
-
-int linearFilter_short(__global const short* src, int srcStep, int cn, float2 pt, int x, int y)
-{
-    int2 ipt;
-    ipt.x = convert_int_sat_rtn(pt.x);
-    ipt.y = convert_int_sat_rtn(pt.y);
-
-    float a = pt.x - ipt.x;
-    float b = pt.y - ipt.y;
-
-    int iw00 = convert_int_sat_rte((1.0f - a) * (1.0f - b) * (1 << W_BITS));
-    int iw01 = convert_int_sat_rte(a * (1.0f - b) * (1 << W_BITS));
-    int iw10 = convert_int_sat_rte((1.0f - a) * b * (1 << W_BITS));
-    int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
-
-    __global const short* src_row = src + (ipt.y + y) * srcStep + ipt.x * cn;
-    __global const short* src_row1 = src + (ipt.y + y + 1) * srcStep + ipt.x * cn;
-
-    return CV_DESCALE(src_row[x] * iw00 + src_row[x + cn] * iw01 + src_row1[x] * iw10 + src_row1[x + cn] * iw11, W_BITS1);
-}
-
-float linearFilter_float(__global const float* src, int srcStep, int cn, float2 pt, float x, float y)
-{
-    int2 ipt;
-    ipt.x = convert_int_sat_rtn(pt.x);
-    ipt.y = convert_int_sat_rtn(pt.y);
-
-    float a = pt.x - ipt.x;
-    float b = pt.y - ipt.y;
-
-    float iw00 = ((1.0f - a) * (1.0f - b) * (1 << W_BITS));
-    float iw01 = (a * (1.0f - b) * (1 << W_BITS));
-    float iw10 = ((1.0f - a) * b * (1 << W_BITS));
-    float iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
-
-    __global const float* src_row = src + (int)(ipt.y + y) * srcStep / 4 + ipt.x * cn;
-    __global const float* src_row1 = src + (int)(ipt.y + y + 1) * srcStep / 4 + ipt.x * cn;
-
-    return src_row[(int)x] * iw00 + src_row[(int)x + cn] * iw01 + src_row1[(int)x] * iw10 + src_row1[(int)x + cn] * iw11, W_BITS1 - 5;
-}
-
 #define	BUFFER	64
-void reduce3(float val1, float val2, float val3, __local float* smem1, __local float* smem2, __local float* smem3, int tid)
+#ifndef WAVE_SIZE
+#define WAVE_SIZE 1
+#endif
+#ifdef CPU
+void reduce3(float val1, float val2, float val3,  __local float* smem1,  __local float* smem2,  __local float* smem3, int tid)
 {
     smem1[tid] = val1;
     smem2[tid] = val2;
     smem3[tid] = val3;
     barrier(CLK_LOCAL_MEM_FENCE);
 
-#if	BUFFER > 128
-    if (tid < 128)
-    {
-        smem1[tid] = val1 += smem1[tid + 128];
-        smem2[tid] = val2 += smem2[tid + 128];
-        smem3[tid] = val3 += smem3[tid + 128];
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-#endif
-
-#if	BUFFER > 64
-    if (tid < 64)
-    {
-        smem1[tid] = val1 += smem1[tid + 64];
-        smem2[tid] = val2 += smem2[tid + 64];
-        smem3[tid] = val3 += smem3[tid + 64];
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-#endif
-
     if (tid < 32)
     {
-        volatile __local float* vmem1 = smem1;
-        volatile __local float* vmem2 = smem2;
-        volatile __local float* vmem3 = smem3;
-
-        vmem1[tid] = val1 += vmem1[tid + 32];
-        vmem2[tid] = val2 += vmem2[tid + 32];
-        vmem3[tid] = val3 += vmem3[tid + 32];
-
-        vmem1[tid] = val1 += vmem1[tid + 16];
-        vmem2[tid] = val2 += vmem2[tid + 16];
-        vmem3[tid] = val3 += vmem3[tid + 16];
-
-        vmem1[tid] = val1 += vmem1[tid + 8];
-        vmem2[tid] = val2 += vmem2[tid + 8];
-        vmem3[tid] = val3 += vmem3[tid + 8];
-
-        vmem1[tid] = val1 += vmem1[tid + 4];
-        vmem2[tid] = val2 += vmem2[tid + 4];
-        vmem3[tid] = val3 += vmem3[tid + 4];
-
-        vmem1[tid] = val1 += vmem1[tid + 2];
-        vmem2[tid] = val2 += vmem2[tid + 2];
-        vmem3[tid] = val3 += vmem3[tid + 2];
-
-        vmem1[tid] = val1 += vmem1[tid + 1];
-        vmem2[tid] = val2 += vmem2[tid + 1];
-        vmem3[tid] = val3 += vmem3[tid + 1];
+        smem1[tid] += smem1[tid + 32];
+        smem2[tid] += smem2[tid + 32];
+        smem3[tid] += smem3[tid + 32];
     }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 16)
+    {
+        smem1[tid] += smem1[tid + 16];
+        smem2[tid] += smem2[tid + 16];
+        smem3[tid] += smem3[tid + 16];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 8)
+    {
+        smem1[tid] += smem1[tid + 8];
+        smem2[tid] += smem2[tid + 8];
+        smem3[tid] += smem3[tid + 8];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 4)
+    {
+        smem1[tid] += smem1[tid + 4];
+        smem2[tid] += smem2[tid + 4];
+        smem3[tid] += smem3[tid + 4];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 2)
+    {
+        smem1[tid] += smem1[tid + 2];
+        smem2[tid] += smem2[tid + 2];
+        smem3[tid] += smem3[tid + 2];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 1)
+    {
+        smem1[BUFFER] = smem1[tid] + smem1[tid + 1];
+        smem2[BUFFER] = smem2[tid] + smem2[tid + 1];
+        smem3[BUFFER] = smem3[tid] + smem3[tid + 1];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
 }
 
-void reduce2(float val1, float val2, __local float* smem1, __local float* smem2, int tid)
+void reduce2(float val1, float val2, volatile __local float* smem1, volatile __local float* smem2, int tid)
 {
     smem1[tid] = val1;
     smem2[tid] = val2;
     barrier(CLK_LOCAL_MEM_FENCE);
 
-#if	BUFFER > 128
-    if (tid < 128)
-    {
-        smem1[tid] = val1 += smem1[tid + 128];
-        smem2[tid] = val2 += smem2[tid + 128];
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-#endif
-
-#if	BUFFER > 64
-    if (tid < 64)
-    {
-        smem1[tid] = val1 += smem1[tid + 64];
-        smem2[tid] = val2 += smem2[tid + 64];
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-#endif
-
     if (tid < 32)
     {
-        volatile __local float* vmem1 = smem1;
-        volatile __local float* vmem2 = smem2;
-
-        vmem1[tid] = val1 += vmem1[tid + 32];
-        vmem2[tid] = val2 += vmem2[tid + 32];
-
-        vmem1[tid] = val1 += vmem1[tid + 16];
-        vmem2[tid] = val2 += vmem2[tid + 16];
-
-        vmem1[tid] = val1 += vmem1[tid + 8];
-        vmem2[tid] = val2 += vmem2[tid + 8];
-
-        vmem1[tid] = val1 += vmem1[tid + 4];
-        vmem2[tid] = val2 += vmem2[tid + 4];
-
-        vmem1[tid] = val1 += vmem1[tid + 2];
-        vmem2[tid] = val2 += vmem2[tid + 2];
-
-        vmem1[tid] = val1 += vmem1[tid + 1];
-        vmem2[tid] = val2 += vmem2[tid + 1];
+        smem1[tid] += smem1[tid + 32];
+        smem2[tid] += smem2[tid + 32];
     }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 16)
+    {
+        smem1[tid] += smem1[tid + 16];
+        smem2[tid] += smem2[tid + 16];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 8)
+    {
+        smem1[tid] += smem1[tid + 8];
+        smem2[tid] += smem2[tid + 8];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 4)
+    {
+        smem1[tid] += smem1[tid + 4];
+        smem2[tid] += smem2[tid + 4];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 2)
+    {
+        smem1[tid] += smem1[tid + 2];
+        smem2[tid] += smem2[tid + 2];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 1)
+    {
+        smem1[BUFFER] = smem1[tid] + smem1[tid + 1];
+        smem2[BUFFER] = smem2[tid] + smem2[tid + 1];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
 }
 
-void reduce1(float val1, __local float* smem1, int tid)
+void reduce1(float val1, volatile __local float* smem1, int tid)
 {
     smem1[tid] = val1;
     barrier(CLK_LOCAL_MEM_FENCE);
 
-#if	BUFFER > 128
-    if (tid < 128)
+    if (tid < 32)
     {
-        smem1[tid] = val1 += smem1[tid + 128];
+        smem1[tid] += smem1[tid + 32];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
-#endif
 
-#if	BUFFER > 64
-    if (tid < 64)
+    if (tid < 16)
     {
-        smem1[tid] = val1 += smem1[tid + 64];
+        smem1[tid] += smem1[tid + 16];
     }
     barrier(CLK_LOCAL_MEM_FENCE);
-#endif
+
+    if (tid < 8)
+    {
+        smem1[tid] += smem1[tid + 8];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 4)
+    {
+        smem1[tid] += smem1[tid + 4];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 2)
+    {
+        smem1[tid] += smem1[tid + 2];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 1)
+    {
+        smem1[BUFFER] = smem1[tid] + smem1[tid + 1];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+}
+#else
+void reduce3(float val1, float val2, float val3, 
+__local volatile float* smem1, __local volatile float* smem2, __local volatile float* smem3, int tid)
+{
+    smem1[tid] = val1;
+    smem2[tid] = val2;
+    smem3[tid] = val3;
+    barrier(CLK_LOCAL_MEM_FENCE);
 
     if (tid < 32)
     {
-        volatile __local float* vmem1 = smem1;
+        smem1[tid] += smem1[tid + 32];
+        smem2[tid] += smem2[tid + 32];
+        smem3[tid] += smem3[tid + 32];
+#if WAVE_SIZE < 32
+	} barrier(CLK_LOCAL_MEM_FENCE);
+	if (tid < 16) {
+#endif
+        smem1[tid] += smem1[tid + 16];
+        smem2[tid] += smem2[tid + 16];
+        smem3[tid] += smem3[tid + 16];
+#if WAVE_SIZE <16
+	} barrier(CLK_LOCAL_MEM_FENCE);
+	if (tid < 8) {
+#endif
+        smem1[tid] += smem1[tid + 8];
+        smem2[tid] += smem2[tid + 8];
+        smem3[tid] += smem3[tid + 8];
 
-        vmem1[tid] = val1 += vmem1[tid + 32];
-        vmem1[tid] = val1 += vmem1[tid + 16];
-        vmem1[tid] = val1 += vmem1[tid + 8];
-        vmem1[tid] = val1 += vmem1[tid + 4];
-        vmem1[tid] = val1 += vmem1[tid + 2];
-        vmem1[tid] = val1 += vmem1[tid + 1];
+        smem1[tid] += smem1[tid + 4];
+        smem2[tid] += smem2[tid + 4];
+        smem3[tid] += smem3[tid + 4];
+
+        smem1[tid] += smem1[tid + 2];
+        smem2[tid] += smem2[tid + 2];
+        smem3[tid] += smem3[tid + 2];
+
+        smem1[tid] += smem1[tid + 1];
+        smem2[tid] += smem2[tid + 1];
+        smem3[tid] += smem3[tid + 1];
     }
 }
 
+void reduce2(float val1, float val2, __local volatile float* smem1, __local volatile float* smem2, int tid)
+{
+    smem1[tid] = val1;
+    smem2[tid] = val2;
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 32)
+    {
+        smem1[tid] += smem1[tid + 32];
+        smem2[tid] += smem2[tid + 32];
+#if WAVE_SIZE < 32
+	} barrier(CLK_LOCAL_MEM_FENCE);
+	if (tid < 16) {
+#endif
+        smem1[tid] += smem1[tid + 16];
+        smem2[tid] += smem2[tid + 16];
+#if WAVE_SIZE <16
+	} barrier(CLK_LOCAL_MEM_FENCE);
+	if (tid < 8) {
+#endif
+        smem1[tid] += smem1[tid + 8];
+        smem2[tid] += smem2[tid + 8];
+
+        smem1[tid] += smem1[tid + 4];
+        smem2[tid] += smem2[tid + 4];
+
+        smem1[tid] += smem1[tid + 2];
+        smem2[tid] += smem2[tid + 2];
+
+        smem1[tid] += smem1[tid + 1];
+        smem2[tid] += smem2[tid + 1];
+    }
+}
+
+void reduce1(float val1, __local volatile float* smem1, int tid)
+{
+    smem1[tid] = val1;
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (tid < 32)
+    {
+        smem1[tid] += smem1[tid + 32];
+#if WAVE_SIZE < 32
+	} barrier(CLK_LOCAL_MEM_FENCE);
+	if (tid < 16) {
+#endif
+        smem1[tid] += smem1[tid + 16];
+#if WAVE_SIZE <16
+	} barrier(CLK_LOCAL_MEM_FENCE);
+	if (tid < 8) {
+#endif
+        smem1[tid] += smem1[tid + 8];
+        smem1[tid] += smem1[tid + 4];
+        smem1[tid] += smem1[tid + 2];
+        smem1[tid] += smem1[tid + 1];
+    }
+}
+#endif
+
 #define SCALE (1.0f / (1 << 20))
 #define	THRESHOLD	0.01f
-#define	DIMENSION	21
 
 // Image read mode
 __constant sampler_t sampler    = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE | CLK_FILTER_LINEAR;
@@ -411,14 +383,20 @@ void GetError4(image2d_t J, const float x, const float y, const float4* Pch, flo
         *errval += fabs(diff.x) + fabs(diff.y) + fabs(diff.z);
 }
 
-
+#define	GRIDSIZE	3
 __kernel void lkSparse_C1_D5(image2d_t I, image2d_t J,
     __global const float2* prevPts, int prevPtsStep, __global float2* nextPts, int nextPtsStep, __global uchar* status, __global float* err,
         const int level, const int rows, const int cols, int PATCH_X, int PATCH_Y, int cn, int c_winSize_x, int c_winSize_y, int c_iters, char calcErr)
 {
+#ifdef CPU
+    __local float smem1[BUFFER+1];
+    __local float smem2[BUFFER+1];
+    __local float smem3[BUFFER+1];
+#else
     __local float smem1[BUFFER];
     __local float smem2[BUFFER];
     __local float smem3[BUFFER];
+#endif
 
         unsigned int xid=get_local_id(0);
         unsigned int yid=get_local_id(1);
@@ -431,7 +409,7 @@ __kernel void lkSparse_C1_D5(image2d_t I, image2d_t J,
 
     const int tid = mad24(yid, xsize, xid);
 
-    float2 prevPt = prevPts[gid] / (1 << level);
+    float2 prevPt = prevPts[gid] / (float2)(1 << level);
 
     if (prevPt.x < 0 || prevPt.x >= cols || prevPt.y < 0 || prevPt.y >= rows)
     {
@@ -450,9 +428,9 @@ __kernel void lkSparse_C1_D5(image2d_t I, image2d_t J,
     float A12 = 0;
     float A22 = 0;
 
-    float I_patch[3][3];
-    float dIdx_patch[3][3];
-    float dIdy_patch[3][3];
+    float I_patch[GRIDSIZE][GRIDSIZE];
+    float dIdx_patch[GRIDSIZE][GRIDSIZE];
+    float dIdy_patch[GRIDSIZE][GRIDSIZE];
 
         yBase=yid;
         {
@@ -512,12 +490,19 @@ __kernel void lkSparse_C1_D5(image2d_t I, image2d_t J,
                                         &I_patch[2][2], &dIdx_patch[2][2], &dIdy_patch[2][2],
                                         &A11, &A12, &A22);
         }
+
     reduce3(A11, A12, A22, smem1, smem2, smem3, tid);
     barrier(CLK_LOCAL_MEM_FENCE);
 
+#ifdef CPU
+    A11 = smem1[BUFFER];
+    A12 = smem2[BUFFER];
+    A22 = smem3[BUFFER];
+#else
     A11 = smem1[0];
     A12 = smem2[0];
     A22 = smem3[0];
+#endif
 
     float D = A11 * A22 - A12 * A12;
 
@@ -609,8 +594,13 @@ __kernel void lkSparse_C1_D5(image2d_t I, image2d_t J,
         reduce2(b1, b2, smem1, smem2, tid);
         barrier(CLK_LOCAL_MEM_FENCE);
 
+#ifdef CPU
+        b1 = smem1[BUFFER];
+        b2 = smem2[BUFFER];
+#else
         b1 = smem1[0];
         b2 = smem2[0];
+#endif
 
         float2 delta;
         delta.x = A12 * b2 - A22 * b1;
@@ -685,18 +675,28 @@ __kernel void lkSparse_C1_D5(image2d_t I, image2d_t J,
         nextPts[gid] = prevPt;
 
         if (calcErr)
-            err[gid] = smem1[0] / (c_winSize_x * c_winSize_y);
+#ifdef CPU
+            err[gid] = smem1[BUFFER] / (float)(c_winSize_x * c_winSize_y);
+#else
+            err[gid] = smem1[0] / (float)(c_winSize_x * c_winSize_y);
+#endif
     }
-
 }
+
 
 __kernel void lkSparse_C4_D5(image2d_t I, image2d_t J,
     __global const float2* prevPts, int prevPtsStep, __global float2* nextPts, int nextPtsStep, __global uchar* status, __global float* err,
         const int level, const int rows, const int cols, int PATCH_X, int PATCH_Y, int cn, int c_winSize_x, int c_winSize_y, int c_iters, char calcErr)
 {
-    __local float smem1[BUFFER];
-    __local float smem2[BUFFER];
-    __local float smem3[BUFFER];
+#ifdef CPU
+     __local float smem1[BUFFER+1];
+     __local float smem2[BUFFER+1];
+     __local float smem3[BUFFER+1];
+#else
+     __local float smem1[BUFFER];
+     __local float smem2[BUFFER];
+     __local float smem3[BUFFER];
+#endif
 
         unsigned int xid=get_local_id(0);
         unsigned int yid=get_local_id(1);
@@ -709,7 +709,7 @@ __kernel void lkSparse_C4_D5(image2d_t I, image2d_t J,
 
     const int tid = mad24(yid, xsize, xid);
 
-    float2 nextPt = prevPts[gid]/(1<<level);
+    float2 nextPt = prevPts[gid]/(float2)(1<<level);
 
     if (nextPt.x < 0 || nextPt.x >= cols || nextPt.y < 0 || nextPt.y >= rows)
     {
@@ -725,9 +725,9 @@ __kernel void lkSparse_C4_D5(image2d_t I, image2d_t J,
 
     // extract the patch from the first image, compute covariation matrix of derivatives
 
-    float A11 = 0;
-    float A12 = 0;
-    float A22 = 0;
+    float A11 = 0.0f;
+    float A12 = 0.0f;
+    float A22 = 0.0f;
 
     float4 I_patch[8];
     float4 dIdx_patch[8];
@@ -797,9 +797,15 @@ __kernel void lkSparse_C4_D5(image2d_t I, image2d_t J,
     reduce3(A11, A12, A22, smem1, smem2, smem3, tid);
     barrier(CLK_LOCAL_MEM_FENCE);
 
+#ifdef CPU
+    A11 = smem1[BUFFER];
+    A12 = smem2[BUFFER];
+    A22 = smem3[BUFFER];
+#else
     A11 = smem1[0];
     A12 = smem2[0];
     A22 = smem3[0];
+#endif
 
     float D = A11 * A22 - A12 * A12;
 
@@ -888,12 +894,16 @@ __kernel void lkSparse_C4_D5(image2d_t I, image2d_t J,
                                                 &b1, &b2);
                 }
 
-
         reduce2(b1, b2, smem1, smem2, tid);
         barrier(CLK_LOCAL_MEM_FENCE);
 
+#ifdef CPU
+        b1 = smem1[BUFFER];
+        b2 = smem2[BUFFER];
+#else
         b1 = smem1[0];
         b2 = smem2[0];
+#endif
 
         float2 delta;
         delta.x = A12 * b2 - A22 * b1;
@@ -967,7 +977,11 @@ __kernel void lkSparse_C4_D5(image2d_t I, image2d_t J,
         nextPts[gid] = nextPt;
 
         if (calcErr)
-            err[gid] = smem1[0] / (3 * c_winSize_x * c_winSize_y);
+#ifdef CPU
+            err[gid] = smem1[BUFFER] / (float)(3 * c_winSize_x * c_winSize_y);
+#else
+            err[gid] = smem1[0] / (float)(3 * c_winSize_x * c_winSize_y);
+#endif
     }
 }
 

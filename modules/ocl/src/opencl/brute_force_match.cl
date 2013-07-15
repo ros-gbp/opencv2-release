@@ -1,126 +1,167 @@
+/*M///////////////////////////////////////////////////////////////////////////////////////
+//
+//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+//
+//  By downloading, copying, installing or using the software you agree to this license.
+//  If you do not agree to this license, do not download, install,
+//  copy or use the software.
+//
+//
+//                           License Agreement
+//                For Open Source Computer Vision Library
+//
+// Copyright (C) 2010-2012, Multicoreware, Inc., all rights reserved.
+// Copyright (C) 2010-2012, Advanced Micro Devices, Inc., all rights reserved.
+// Third party copyrights are property of their respective owners.
+//
+// @Authors
+//    Nathan, liujun@multicorewareinc.com
+//    Peng Xiao, pengxiao@outlook.com
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
+//
+//   * Redistribution's of source code must retain the above copyright notice,
+//     this list of conditions and the following disclaimer.
+//
+//   * Redistribution's in binary form must reproduce the above copyright notice,
+//     this list of conditions and the following disclaimer in the documentation
+//     and/or other oclMaterials provided with the distribution.
+//
+//   * The name of the copyright holders may not be used to endorse or promote products
+//     derived from this software without specific prior written permission.
+//
+// This software is provided by the copyright holders and contributors "as is" and
+// any express or implied warranties, including, but not limited to, the implied
+// warranties of merchantability and fitness for a particular purpose are disclaimed.
+// In no event shall the Intel Corporation or contributors be liable for any direct,
+// indirect, incidental, special, exemplary, or consequential damages
+// (including, but not limited to, procurement of substitute goods or services;
+// loss of use, data, or profits; or business interruption) however caused
+// and on any theory of liability, whether in contract, strict liability,
+// or tort (including negligence or otherwise) arising in any way out of
+// the use of this software, even if advised of the possibility of such damage.
+//
+//M*/
+
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics:enable
-#define MAX_FLOAT 1e7f
+#define MAX_FLOAT 3.40282e+038f
 
-int bit1Count(float x)
+#ifndef T
+#define T float
+#endif
+
+#ifndef BLOCK_SIZE
+#define BLOCK_SIZE 16
+#endif
+#ifndef MAX_DESC_LEN
+#define MAX_DESC_LEN 64
+#endif
+
+#ifndef DIST_TYPE
+#define DIST_TYPE 0
+#endif
+
+//http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+int bit1Count(int v)
 {
-    int c = 0;
-    int ix = (int)x;
-    for (int i = 0 ; i < 32 ; i++)
-    {
-        c += ix & 0x1;
-        ix >>= 1;
-    }
-    return (float)c;
+    v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
+    v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
+    return ((v + (v >> 4) & 0xF0F0F0F) * 0x1010101) >> 24; // count
 }
 
-float reduce_block(__local float *s_query,
-                   __local float *s_train,
-                   int block_size,
-                   int lidx,
-                   int lidy,
-                   int distType
-                  )
+// dirty fix for non-template support
+#if   (DIST_TYPE == 0) // L1Dist
+#   ifdef T_FLOAT
+#       define DIST(x, y) fabs((x) - (y))
+        typedef float value_type;
+        typedef float result_type;
+#   else
+#       define DIST(x, y) abs((x) - (y))
+        typedef int value_type;
+        typedef int result_type;
+#   endif
+#define DIST_RES(x) (x)
+#elif (DIST_TYPE == 1) // L2Dist
+#define DIST(x, y) (((x) - (y)) * ((x) - (y)))
+typedef float value_type;
+typedef float result_type;
+#define DIST_RES(x) sqrt(x)
+#elif (DIST_TYPE == 2) // Hamming
+#define DIST(x, y) bit1Count( (x) ^ (y) )
+typedef int value_type;
+typedef int result_type;
+#define DIST_RES(x) (x)
+#endif
+
+result_type reduce_block(
+    __local value_type *s_query,
+    __local value_type *s_train,
+    int lidx,
+    int lidy
+    )
 {
-    /* there are threee types in the reducer. the first is L1Dist, which to sum the abs(v1, v2), the second is L2Dist, which to
-    sum the (v1 - v2) * (v1 - v2), the third is humming, which to popc(v1 ^ v2), popc is to count the bits are set to 1*/
-    float result = 0;
-    switch(distType)
+    result_type result = 0;
+    #pragma unroll
+    for (int j = 0 ; j < BLOCK_SIZE ; j++)
     {
-    case 0:
-        for (int j = 0 ; j < block_size ; j++)
-        {
-            result += fabs(s_query[lidy * block_size + j] -  s_train[j * block_size + lidx]);
-        }
-        break;
-    case 1:
-        for (int j = 0 ; j < block_size ; j++)
-        {
-            float qr = s_query[lidy * block_size + j] -  s_train[j * block_size + lidx];
-            result += qr * qr;
-        }
-        break;
-    case 2:
-        for (int j = 0 ; j < block_size ; j++)
-        {
-            result += bit1Count((uint)s_query[lidy * block_size + j] ^ (uint)s_train[(uint)j * block_size + lidx]);
-        }
-        break;
+        result += DIST(
+            s_query[lidy * BLOCK_SIZE + j],
+            s_train[j * BLOCK_SIZE + lidx]);
     }
-    return result;
+    return DIST_RES(result);
 }
 
-float reduce_multi_block(__local float *s_query,
-                         __local float *s_train,
-                         int max_desc_len,
-                         int block_size,
-                         int block_index,
-                         int lidx,
-                         int lidy,
-                         int distType
-                        )
+result_type reduce_multi_block(
+    __local value_type *s_query,
+    __local value_type *s_train,
+    int block_index,
+    int lidx,
+    int lidy
+    )
 {
-    /* there are threee types in the reducer. the first is L1Dist, which to sum the abs(v1, v2), the second is L2Dist, which to
-    sum the (v1 - v2) * (v1 - v2), the third is humming, which to popc(v1 ^ v2), popc is to count the bits are set to 1*/
-    float result = 0;
-    switch(distType)
+    result_type result = 0;
+    #pragma unroll
+    for (int j = 0 ; j < BLOCK_SIZE ; j++)
     {
-    case 0:
-        for (int j = 0 ; j < block_size ; j++)
-        {
-            result += fabs(s_query[lidy * max_desc_len + block_index * block_size + j] -  s_train[j * block_size + lidx]);
-        }
-        break;
-    case 1:
-        for (int j = 0 ; j < block_size ; j++)
-        {
-            float qr = s_query[lidy * max_desc_len + block_index * block_size + j] -  s_train[j * block_size + lidx];
-            result += qr * qr;
-        }
-        break;
-    case 2:
-        for (int j = 0 ; j < block_size ; j++)
-        {
-            //result += popcount((uint)s_query[lidy * max_desc_len + block_index * block_size + j] ^ (uint)s_train[j * block_size + lidx]);
-            result += bit1Count((uint)s_query[lidy * max_desc_len + block_index * block_size + j] ^ (uint)s_train[j * block_size + lidx]);
-        }
-        break;
+        result += DIST(
+            s_query[lidy * MAX_DESC_LEN + block_index * BLOCK_SIZE + j],
+            s_train[j * BLOCK_SIZE + lidx]);
     }
-    return result;
+    return DIST_RES(result);
 }
 
-/* 2dim launch, global size: dim0 is (query rows + block_size - 1) / block_size * block_size, dim1 is block_size
-local size: dim0 is block_size, dim1 is block_size.
+/* 2dim launch, global size: dim0 is (query rows + BLOCK_SIZE - 1) / BLOCK_SIZE * BLOCK_SIZE, dim1 is BLOCK_SIZE
+local size: dim0 is BLOCK_SIZE, dim1 is BLOCK_SIZE.
 */
-__kernel void BruteForceMatch_UnrollMatch_D5(
-    __global float *query,
-    __global float *train,
+__kernel void BruteForceMatch_UnrollMatch(
+    __global T *query,
+    __global T *train,
     //__global float *mask,
     __global int *bestTrainIdx,
     __global float *bestDistance,
     __local float *sharebuffer,
-    int block_size,
-    int max_desc_len,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
-    int step,
-    int distType
+    int step
 )
 {
     const int lidx = get_local_id(0);
     const int lidy = get_local_id(1);
     const int groupidx = get_group_id(0);
 
-    __local float *s_query = sharebuffer;
-    __local float *s_train = sharebuffer + block_size * max_desc_len;
+    __local value_type *s_query = (__local value_type *)sharebuffer;
+    __local value_type *s_train = (__local value_type *)sharebuffer + BLOCK_SIZE * MAX_DESC_LEN;
 
-    int queryIdx = groupidx * block_size + lidy;
+    int queryIdx = groupidx * BLOCK_SIZE + lidy;
     // load the query into local memory.
-    for (int i = 0 ;  i <  max_desc_len / block_size; i ++)
+    #pragma unroll
+    for (int i = 0 ;  i <  MAX_DESC_LEN / BLOCK_SIZE; i ++)
     {
-        int loadx = lidx + i * block_size;
-        s_query[lidy * max_desc_len + loadx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
+        int loadx = lidx + i * BLOCK_SIZE;
+        s_query[lidy * MAX_DESC_LEN + loadx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
     }
 
     float myBestDistance = MAX_FLOAT;
@@ -128,24 +169,25 @@ __kernel void BruteForceMatch_UnrollMatch_D5(
 
     // loopUnrolledCached to find the best trainIdx and best distance.
     volatile int imgIdx = 0;
-    for (int t = 0 ; t < (train_rows + block_size - 1) / block_size ; t++)
+    for (int t = 0, endt = (train_rows + BLOCK_SIZE - 1) / BLOCK_SIZE; t < endt; t++)
     {
-        float result = 0;
-        for (int i = 0 ; i < max_desc_len / block_size ; i++)
+        result_type result = 0;
+        #pragma unroll
+        for (int i = 0 ; i < MAX_DESC_LEN / BLOCK_SIZE ; i++)
         {
-            //load a block_size * block_size block into local train.
-            const int loadx = lidx + i * block_size;
-            s_train[lidx * block_size + lidy] = loadx < train_cols ? train[min(t * block_size + lidy, train_rows - 1) * (step / sizeof(float)) + loadx] : 0;
+            //load a BLOCK_SIZE * BLOCK_SIZE block into local train.
+            const int loadx = lidx + i * BLOCK_SIZE;
+            s_train[lidx * BLOCK_SIZE + lidy] = loadx < train_cols ? train[min(t * BLOCK_SIZE + lidy, train_rows - 1) * (step / sizeof(float)) + loadx] : 0;
 
             //synchronize to make sure each elem for reduceIteration in share memory is written already.
             barrier(CLK_LOCAL_MEM_FENCE);
 
-            result += reduce_multi_block(s_query, s_train, max_desc_len, block_size, i, lidx, lidy, distType);
+            result += reduce_multi_block(s_query, s_train, i, lidx, lidy);
 
             barrier(CLK_LOCAL_MEM_FENCE);
         }
 
-        int trainIdx = t * block_size + lidx;
+        int trainIdx = t * BLOCK_SIZE + lidx;
 
         if (queryIdx < query_rows && trainIdx < train_rows && result < myBestDistance/* && mask(queryIdx, trainIdx)*/)
         {
@@ -157,18 +199,19 @@ __kernel void BruteForceMatch_UnrollMatch_D5(
 
     barrier(CLK_LOCAL_MEM_FENCE);
     __local float *s_distance = (__local float*)(sharebuffer);
-    __local int* s_trainIdx = (__local int *)(sharebuffer + block_size * block_size);
+    __local int* s_trainIdx = (__local int *)(sharebuffer + BLOCK_SIZE * BLOCK_SIZE);
 
     //find BestMatch
-    s_distance += lidy * block_size;
-    s_trainIdx += lidy * block_size;
+    s_distance += lidy * BLOCK_SIZE;
+    s_trainIdx += lidy * BLOCK_SIZE;
     s_distance[lidx] = myBestDistance;
     s_trainIdx[lidx] = myBestTrainIdx;
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     //reduce -- now all reduce implement in each threads.
-    for (int k = 0 ; k < block_size; k++)
+    #pragma unroll
+    for (int k = 0 ; k < BLOCK_SIZE; k++)
     {
         if (myBestDistance > s_distance[k])
         {
@@ -184,60 +227,57 @@ __kernel void BruteForceMatch_UnrollMatch_D5(
     }
 }
 
-__kernel void BruteForceMatch_Match_D5(
-    __global float *query,
-    __global float *train,
+__kernel void BruteForceMatch_Match(
+    __global T *query,
+    __global T *train,
     //__global float *mask,
     __global int *bestTrainIdx,
     __global float *bestDistance,
     __local float *sharebuffer,
-    int block_size,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
-    int step,
-    int distType
+    int step
 )
 {
     const int lidx = get_local_id(0);
     const int lidy = get_local_id(1);
     const int groupidx = get_group_id(0);
 
-    const int queryIdx = groupidx * block_size + lidy;
+    const int queryIdx = groupidx * BLOCK_SIZE + lidy;
 
     float myBestDistance = MAX_FLOAT;
     int myBestTrainIdx = -1;
 
-    __local float *s_query = sharebuffer;
-    __local float *s_train = sharebuffer + block_size * block_size;
+    __local value_type *s_query = (__local value_type *)sharebuffer;
+    __local value_type *s_train = (__local value_type *)sharebuffer + BLOCK_SIZE * BLOCK_SIZE;
 
     // loop
-    for (int t = 0 ;  t < (train_rows + block_size - 1) / block_size ; t++)
+    for (int t = 0 ;  t < (train_rows + BLOCK_SIZE - 1) / BLOCK_SIZE ; t++)
     {
-        //Dist dist;
-        float result = 0;
-        for (int i = 0 ; i < (query_cols + block_size - 1) / block_size ; i++)
+        result_type result = 0;
+        for (int i = 0 ; i < (query_cols + BLOCK_SIZE - 1) / BLOCK_SIZE ; i++)
         {
-            const int loadx = lidx + i * block_size;
+            const int loadx = lidx + i * BLOCK_SIZE;
             //load query and train into local memory
-            s_query[lidy * block_size + lidx] = 0;
-            s_train[lidx * block_size + lidy] = 0;
+            s_query[lidy * BLOCK_SIZE + lidx] = 0;
+            s_train[lidx * BLOCK_SIZE + lidy] = 0;
 
             if (loadx < query_cols)
             {
-                s_query[lidy * block_size + lidx] = query[min(queryIdx, query_rows - 1) * (step / sizeof(float)) + loadx];
-                s_train[lidx * block_size + lidy] = train[min(t * block_size + lidy, train_rows - 1) * (step / sizeof(float)) + loadx];
+                s_query[lidy * BLOCK_SIZE + lidx] = query[min(queryIdx, query_rows - 1) * (step / sizeof(float)) + loadx];
+                s_train[lidx * BLOCK_SIZE + lidy] = train[min(t * BLOCK_SIZE + lidy, train_rows - 1) * (step / sizeof(float)) + loadx];
             }
 
             barrier(CLK_LOCAL_MEM_FENCE);
 
-            result += reduce_block(s_query, s_train, block_size, lidx, lidy, distType);
+            result += reduce_block(s_query, s_train, lidx, lidy);
 
             barrier(CLK_LOCAL_MEM_FENCE);
         }
 
-        const int trainIdx = t * block_size + lidx;
+        const int trainIdx = t * BLOCK_SIZE + lidx;
 
         if (queryIdx < query_rows && trainIdx < train_rows && result < myBestDistance /*&& mask(queryIdx, trainIdx)*/)
         {
@@ -250,18 +290,18 @@ __kernel void BruteForceMatch_Match_D5(
     barrier(CLK_LOCAL_MEM_FENCE);
 
     __local float *s_distance = (__local float *)sharebuffer;
-    __local int *s_trainIdx = (__local int *)(sharebuffer + block_size * block_size);
+    __local int *s_trainIdx = (__local int *)(sharebuffer + BLOCK_SIZE * BLOCK_SIZE);
 
     //findBestMatch
-    s_distance += lidy * block_size;
-    s_trainIdx += lidy * block_size;
+    s_distance += lidy * BLOCK_SIZE;
+    s_trainIdx += lidy * BLOCK_SIZE;
     s_distance[lidx] = myBestDistance;
     s_trainIdx[lidx] = myBestTrainIdx;
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     //reduce -- now all reduce implement in each threads.
-    for (int k = 0 ; k < block_size; k++)
+    for (int k = 0 ; k < BLOCK_SIZE; k++)
     {
         if (myBestDistance > s_distance[k])
         {
@@ -278,25 +318,22 @@ __kernel void BruteForceMatch_Match_D5(
 }
 
 //radius_unrollmatch
-__kernel void BruteForceMatch_RadiusUnrollMatch_D5(
-    __global float *query,
-    __global float *train,
+__kernel void BruteForceMatch_RadiusUnrollMatch(
+    __global T *query,
+    __global T *train,
     float maxDistance,
     //__global float *mask,
     __global int *bestTrainIdx,
     __global float *bestDistance,
     __global int *nMatches,
     __local float *sharebuffer,
-    int block_size,
-    int max_desc_len,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
     int bestTrainIdx_cols,
     int step,
-    int ostep,
-    int distType
+    int ostep
 )
 {
     const int lidx = get_local_id(0);
@@ -304,30 +341,31 @@ __kernel void BruteForceMatch_RadiusUnrollMatch_D5(
     const int groupidx = get_group_id(0);
     const int groupidy = get_group_id(1);
 
-    const int queryIdx = groupidy * block_size + lidy;
-    const int trainIdx = groupidx * block_size + lidx;
+    const int queryIdx = groupidy * BLOCK_SIZE + lidy;
+    const int trainIdx = groupidx * BLOCK_SIZE + lidx;
 
-    __local float *s_query = sharebuffer;
-    __local float *s_train = sharebuffer + block_size * block_size;
+    __local value_type *s_query = (__local value_type *)sharebuffer;
+    __local value_type *s_train = (__local value_type *)sharebuffer + BLOCK_SIZE * BLOCK_SIZE;
 
-    float result = 0;
-    for (int i = 0 ; i < max_desc_len / block_size ; ++i)
+    result_type result = 0;
+    for (int i = 0 ; i < MAX_DESC_LEN / BLOCK_SIZE ; ++i)
     {
-        //load a block_size * block_size block into local train.
-        const int loadx = lidx + i * block_size;
+        //load a BLOCK_SIZE * BLOCK_SIZE block into local train.
+        const int loadx = lidx + i * BLOCK_SIZE;
 
-        s_query[lidy * block_size + lidx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
-        s_train[lidx * block_size + lidy] = loadx < query_cols ? train[min(groupidx * block_size + lidy, train_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
+        s_query[lidy * BLOCK_SIZE + lidx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
+        s_train[lidx * BLOCK_SIZE + lidy] = loadx < query_cols ? train[min(groupidx * BLOCK_SIZE + lidy, train_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
 
         //synchronize to make sure each elem for reduceIteration in share memory is written already.
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        result += reduce_block(s_query, s_train, block_size, lidx, lidy, distType);
+        result += reduce_block(s_query, s_train, lidx, lidy);
 
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    if (queryIdx < query_rows && trainIdx < train_rows && result < maxDistance/* && mask(queryIdx, trainIdx)*/)
+    if (queryIdx < query_rows && trainIdx < train_rows &&
+        convert_float(result) < maxDistance/* && mask(queryIdx, trainIdx)*/)
     {
         unsigned int ind = atom_inc(nMatches + queryIdx/*, (unsigned int) -1*/);
 
@@ -341,24 +379,22 @@ __kernel void BruteForceMatch_RadiusUnrollMatch_D5(
 }
 
 //radius_match
-__kernel void BruteForceMatch_RadiusMatch_D5(
-    __global float *query,
-    __global float *train,
+__kernel void BruteForceMatch_RadiusMatch(
+    __global T *query,
+    __global T *train,
     float maxDistance,
     //__global float *mask,
     __global int *bestTrainIdx,
     __global float *bestDistance,
     __global int *nMatches,
     __local float *sharebuffer,
-    int block_size,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
     int bestTrainIdx_cols,
     int step,
-    int ostep,
-    int distType
+    int ostep
 )
 {
     const int lidx = get_local_id(0);
@@ -366,30 +402,31 @@ __kernel void BruteForceMatch_RadiusMatch_D5(
     const int groupidx = get_group_id(0);
     const int groupidy = get_group_id(1);
 
-    const int queryIdx = groupidy * block_size + lidy;
-    const int trainIdx = groupidx * block_size + lidx;
+    const int queryIdx = groupidy * BLOCK_SIZE + lidy;
+    const int trainIdx = groupidx * BLOCK_SIZE + lidx;
 
-    __local float *s_query = sharebuffer;
-    __local float *s_train = sharebuffer + block_size * block_size;
+    __local value_type *s_query = (__local value_type *)sharebuffer;
+    __local value_type *s_train = (__local value_type *)sharebuffer + BLOCK_SIZE * BLOCK_SIZE;
 
-    float result = 0;
-    for (int i = 0 ; i < (query_cols + block_size - 1) / block_size ; ++i)
+    result_type result = 0;
+    for (int i = 0 ; i < (query_cols + BLOCK_SIZE - 1) / BLOCK_SIZE ; ++i)
     {
-        //load a block_size * block_size block into local train.
-        const int loadx = lidx + i * block_size;
+        //load a BLOCK_SIZE * BLOCK_SIZE block into local train.
+        const int loadx = lidx + i * BLOCK_SIZE;
 
-        s_query[lidy * block_size + lidx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
-        s_train[lidx * block_size + lidy] = loadx < query_cols ? train[min(groupidx * block_size + lidy, train_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
+        s_query[lidy * BLOCK_SIZE + lidx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
+        s_train[lidx * BLOCK_SIZE + lidy] = loadx < query_cols ? train[min(groupidx * BLOCK_SIZE + lidy, train_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
 
         //synchronize to make sure each elem for reduceIteration in share memory is written already.
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        result += reduce_block(s_query, s_train, block_size, lidx, lidy, distType);
+        result += reduce_block(s_query, s_train, lidx, lidy);
 
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
-    if (queryIdx < query_rows && trainIdx < train_rows && result < maxDistance/* && mask(queryIdx, trainIdx)*/)
+    if (queryIdx < query_rows && trainIdx < train_rows && 
+        convert_float(result) < maxDistance/* && mask(queryIdx, trainIdx)*/)
     {
         unsigned int ind = atom_inc(nMatches + queryIdx);
 
@@ -403,36 +440,33 @@ __kernel void BruteForceMatch_RadiusMatch_D5(
 }
 
 
-__kernel void BruteForceMatch_knnUnrollMatch_D5(
-    __global float *query,
-    __global float *train,
+__kernel void BruteForceMatch_knnUnrollMatch(
+    __global T *query,
+    __global T *train,
     //__global float *mask,
     __global int2 *bestTrainIdx,
     __global float2 *bestDistance,
     __local float *sharebuffer,
-    int block_size,
-    int max_desc_len,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
-    int step,
-    int distType
+    int step
 )
 {
     const int lidx = get_local_id(0);
     const int lidy = get_local_id(1);
     const int groupidx = get_group_id(0);
 
-    const int queryIdx = groupidx * block_size + lidy;
-    local float *s_query = sharebuffer;
-    local float *s_train = sharebuffer + block_size * max_desc_len;
+    const int queryIdx = groupidx * BLOCK_SIZE + lidy;
+    __local value_type *s_query = (__local value_type *)sharebuffer;
+    __local value_type *s_train = (__local value_type *)sharebuffer + BLOCK_SIZE * MAX_DESC_LEN;
 
     // load the query into local memory.
-    for (int i = 0 ;  i <  max_desc_len / block_size; i ++)
+    for (int i = 0 ;  i <  MAX_DESC_LEN / BLOCK_SIZE; i ++)
     {
-        int loadx = lidx + i * block_size;
-        s_query[lidy * max_desc_len + loadx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
+        int loadx = lidx + i * BLOCK_SIZE;
+        s_query[lidy * MAX_DESC_LEN + loadx] = loadx < query_cols ? query[min(queryIdx, query_rows - 1)  * (step / sizeof(float)) + loadx] : 0;
     }
 
     float myBestDistance1 = MAX_FLOAT;
@@ -442,25 +476,24 @@ __kernel void BruteForceMatch_knnUnrollMatch_D5(
 
     //loopUnrolledCached
     volatile int imgIdx = 0;
-    for (int t = 0 ; t < (train_rows + block_size - 1) / block_size ; t++)
+    for (int t = 0 ; t < (train_rows + BLOCK_SIZE - 1) / BLOCK_SIZE ; t++)
     {
-        float result = 0;
-        for (int i = 0 ; i < max_desc_len / block_size ; i++)
+        result_type result = 0;
+        for (int i = 0 ; i < MAX_DESC_LEN / BLOCK_SIZE ; i++)
         {
-            const int loadX = lidx + i * block_size;
-            //load a block_size * block_size block into local train.
-            const int loadx = lidx + i * block_size;
-            s_train[lidx * block_size + lidy] = loadx < train_cols ? train[min(t * block_size + lidy, train_rows - 1) * (step / sizeof(float)) + loadx] : 0;
+            //load a BLOCK_SIZE * BLOCK_SIZE block into local train.
+            const int loadx = lidx + i * BLOCK_SIZE;
+            s_train[lidx * BLOCK_SIZE + lidy] = loadx < train_cols ? train[min(t * BLOCK_SIZE + lidy, train_rows - 1) * (step / sizeof(float)) + loadx] : 0;
 
             //synchronize to make sure each elem for reduceIteration in share memory is written already.
             barrier(CLK_LOCAL_MEM_FENCE);
 
-            result += reduce_multi_block(s_query, s_train, max_desc_len, block_size, i, lidx, lidy, distType);
+            result += reduce_multi_block(s_query, s_train, i, lidx, lidy);
 
             barrier(CLK_LOCAL_MEM_FENCE);
         }
 
-        const int trainIdx = t * block_size + lidx;
+        const int trainIdx = t * BLOCK_SIZE + lidx;
 
         if (queryIdx < query_rows && trainIdx < train_rows)
         {
@@ -481,12 +514,12 @@ __kernel void BruteForceMatch_knnUnrollMatch_D5(
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    local float *s_distance = (local float *)sharebuffer;
-    local int *s_trainIdx = (local int *)(sharebuffer + block_size * block_size);
+    __local float *s_distance = (local float *)sharebuffer;
+    __local int *s_trainIdx = (local int *)(sharebuffer + BLOCK_SIZE * BLOCK_SIZE);
 
     // find BestMatch
-    s_distance += lidy * block_size;
-    s_trainIdx += lidy * block_size;
+    s_distance += lidy * BLOCK_SIZE;
+    s_trainIdx += lidy * BLOCK_SIZE;
 
     s_distance[lidx] = myBestDistance1;
     s_trainIdx[lidx] = myBestTrainIdx1;
@@ -499,7 +532,7 @@ __kernel void BruteForceMatch_knnUnrollMatch_D5(
 
     if (lidx == 0)
     {
-        for (int i = 0 ; i < block_size ; i++)
+        for (int i = 0 ; i < BLOCK_SIZE ; i++)
         {
             float val = s_distance[i];
             if (val < bestDistance1)
@@ -527,7 +560,7 @@ __kernel void BruteForceMatch_knnUnrollMatch_D5(
 
     if (lidx == 0)
     {
-        for (int i = 0 ; i < block_size ; i++)
+        for (int i = 0 ; i < BLOCK_SIZE ; i++)
         {
             float val = s_distance[i];
 
@@ -552,29 +585,27 @@ __kernel void BruteForceMatch_knnUnrollMatch_D5(
     }
 }
 
-__kernel void BruteForceMatch_knnMatch_D5(
-    __global float *query,
-    __global float *train,
+__kernel void BruteForceMatch_knnMatch(
+    __global T *query,
+    __global T *train,
     //__global float *mask,
     __global int2 *bestTrainIdx,
     __global float2 *bestDistance,
     __local float *sharebuffer,
-    int block_size,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
-    int step,
-    int distType
+    int step
 )
 {
     const int lidx = get_local_id(0);
     const int lidy = get_local_id(1);
     const int groupidx = get_group_id(0);
 
-    const int queryIdx = groupidx * block_size + lidy;
-    local float *s_query = sharebuffer;
-    local float *s_train = sharebuffer + block_size * block_size;
+    const int queryIdx = groupidx * BLOCK_SIZE + lidy;
+    __local value_type *s_query = (__local value_type *)sharebuffer;
+    __local value_type *s_train = (__local value_type *)sharebuffer + BLOCK_SIZE * BLOCK_SIZE;
 
     float myBestDistance1 = MAX_FLOAT;
     float myBestDistance2 = MAX_FLOAT;
@@ -582,30 +613,30 @@ __kernel void BruteForceMatch_knnMatch_D5(
     int myBestTrainIdx2 = -1;
 
     //loop
-    for (int  t = 0 ; t < (train_rows + block_size - 1) / block_size ; t++)
+    for (int  t = 0 ; t < (train_rows + BLOCK_SIZE - 1) / BLOCK_SIZE ; t++)
     {
-        float result = 0.0f;
-        for (int i = 0 ; i < (query_cols + block_size -1) / block_size ; i++)
+        result_type result = 0.0f;
+        for (int i = 0 ; i < (query_cols + BLOCK_SIZE -1) / BLOCK_SIZE ; i++)
         {
-            const int loadx = lidx + i * block_size;
+            const int loadx = lidx + i * BLOCK_SIZE;
             //load query and train into local memory
-            s_query[lidy * block_size + lidx] = 0;
-            s_train[lidx * block_size + lidy] = 0;
+            s_query[lidy * BLOCK_SIZE + lidx] = 0;
+            s_train[lidx * BLOCK_SIZE + lidy] = 0;
 
             if (loadx < query_cols)
             {
-                s_query[lidy * block_size + lidx] = query[min(queryIdx, query_rows - 1) * (step / sizeof(float)) + loadx];
-                s_train[lidx * block_size + lidy] = train[min(t * block_size + lidy, train_rows - 1) * (step / sizeof(float)) + loadx];
+                s_query[lidy * BLOCK_SIZE + lidx] = query[min(queryIdx, query_rows - 1) * (step / sizeof(float)) + loadx];
+                s_train[lidx * BLOCK_SIZE + lidy] = train[min(t * BLOCK_SIZE + lidy, train_rows - 1) * (step / sizeof(float)) + loadx];
             }
 
             barrier(CLK_LOCAL_MEM_FENCE);
 
-            result += reduce_block(s_query, s_train, block_size, lidx, lidy, distType);
+            result += reduce_block(s_query, s_train, lidx, lidy);
 
             barrier(CLK_LOCAL_MEM_FENCE);
         }
 
-        const int trainIdx = t * block_size + lidx;
+        const int trainIdx = t * BLOCK_SIZE + lidx;
 
         if (queryIdx < query_rows && trainIdx < train_rows /*&& mask(queryIdx, trainIdx)*/)
         {
@@ -627,11 +658,11 @@ __kernel void BruteForceMatch_knnMatch_D5(
     barrier(CLK_LOCAL_MEM_FENCE);
 
     __local float *s_distance = (__local float *)sharebuffer;
-    __local int *s_trainIdx = (__local int *)(sharebuffer + block_size * block_size);
+    __local int *s_trainIdx = (__local int *)(sharebuffer + BLOCK_SIZE * BLOCK_SIZE);
 
     //findBestMatch
-    s_distance += lidy * block_size;
-    s_trainIdx += lidy * block_size;
+    s_distance += lidy * BLOCK_SIZE;
+    s_trainIdx += lidy * BLOCK_SIZE;
 
     s_distance[lidx] = myBestDistance1;
     s_trainIdx[lidx] = myBestTrainIdx1;
@@ -644,7 +675,7 @@ __kernel void BruteForceMatch_knnMatch_D5(
 
     if (lidx == 0)
     {
-        for (int i = 0 ; i < block_size ; i++)
+        for (int i = 0 ; i < BLOCK_SIZE ; i++)
         {
             float val = s_distance[i];
             if (val < bestDistance1)
@@ -672,7 +703,7 @@ __kernel void BruteForceMatch_knnMatch_D5(
 
     if (lidx == 0)
     {
-        for (int i = 0 ; i < block_size ; i++)
+        for (int i = 0 ; i < BLOCK_SIZE ; i++)
         {
             float val = s_distance[i];
 
@@ -697,47 +728,41 @@ __kernel void BruteForceMatch_knnMatch_D5(
     }
 }
 
-kernel void BruteForceMatch_calcDistanceUnrolled_D5(
-    __global float *query,
-    __global float *train,
+kernel void BruteForceMatch_calcDistanceUnrolled(
+    __global T *query,
+    __global T *train,
     //__global float *mask,
     __global float *allDist,
     __local float *sharebuffer,
-    int block_size,
-    int max_desc_len,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
-    int step,
-    int distType)
+    int step)
 {
     /* Todo */
 }
 
-kernel void BruteForceMatch_calcDistance_D5(
-    __global float *query,
-    __global float *train,
+kernel void BruteForceMatch_calcDistance(
+    __global T *query,
+    __global T *train,
     //__global float *mask,
     __global float *allDist,
     __local float *sharebuffer,
-    int block_size,
     int query_rows,
     int query_cols,
     int train_rows,
     int train_cols,
-    int step,
-    int distType)
+    int step)
 {
     /* Todo */
 }
 
-kernel void BruteForceMatch_findBestMatch_D5(
+kernel void BruteForceMatch_findBestMatch(
     __global float *allDist,
     __global int *bestTrainIdx,
     __global float *bestDistance,
-    int k,
-    int block_size
+    int k
 )
 {
     /* Todo */

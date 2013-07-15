@@ -38,7 +38,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     private boolean mStopThread;
 
     protected Camera mCamera;
-    protected JavaCameraFrame mCameraFrame;
+    protected JavaCameraFrame[] mCameraFrame;
     private SurfaceTexture mSurfaceTexture;
 
     public static class JavaCameraSizeAccessor implements ListItemAccessor {
@@ -68,7 +68,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
         synchronized (this) {
             mCamera = null;
 
-            if (mCameraIndex == -1) {
+            if (mCameraIndex == CAMERA_ID_ANY) {
                 Log.d(TAG, "Trying to open camera with old open()");
                 try {
                     mCamera = Camera.open();
@@ -92,11 +92,39 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 }
             } else {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-                    Log.d(TAG, "Trying to open camera with new open(" + Integer.valueOf(mCameraIndex) + ")");
-                    try {
-                        mCamera = Camera.open(mCameraIndex);
-                    } catch (RuntimeException e) {
-                        Log.e(TAG, "Camera #" + mCameraIndex + "failed to open: " + e.getLocalizedMessage());
+                    int localCameraIndex = mCameraIndex;
+                    if (mCameraIndex == CAMERA_ID_BACK) {
+                        Log.i(TAG, "Trying to open back camera");
+                        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+                        for (int camIdx = 0; camIdx < Camera.getNumberOfCameras(); ++camIdx) {
+                            Camera.getCameraInfo( camIdx, cameraInfo );
+                            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                                localCameraIndex = camIdx;
+                                break;
+                            }
+                        }
+                    } else if (mCameraIndex == CAMERA_ID_FRONT) {
+                        Log.i(TAG, "Trying to open front camera");
+                        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+                        for (int camIdx = 0; camIdx < Camera.getNumberOfCameras(); ++camIdx) {
+                            Camera.getCameraInfo( camIdx, cameraInfo );
+                            if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                                localCameraIndex = camIdx;
+                                break;
+                            }
+                        }
+                    }
+                    if (localCameraIndex == CAMERA_ID_BACK) {
+                        Log.e(TAG, "Back camera not found!");
+                    } else if (localCameraIndex == CAMERA_ID_FRONT) {
+                        Log.e(TAG, "Front camera not found!");
+                    } else {
+                        Log.d(TAG, "Trying to open camera with new open(" + Integer.valueOf(localCameraIndex) + ")");
+                        try {
+                            mCamera = Camera.open(localCameraIndex);
+                        } catch (RuntimeException e) {
+                            Log.e(TAG, "Camera #" + localCameraIndex + "failed to open: " + e.getLocalizedMessage());
+                        }
                     }
                 }
             }
@@ -152,7 +180,9 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
                     AllocateCache();
 
-                    mCameraFrame = new JavaCameraFrame(mFrameChain[mChainIdx], mFrameWidth, mFrameHeight);
+                    mCameraFrame = new JavaCameraFrame[2];
+                    mCameraFrame[0] = new JavaCameraFrame(mFrameChain[0], mFrameWidth, mFrameHeight);
+                    mCameraFrame[1] = new JavaCameraFrame(mFrameChain[1], mFrameWidth, mFrameHeight);
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                         mSurfaceTexture = new SurfaceTexture(MAGIC_TEXTURE_ID);
@@ -179,6 +209,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
         synchronized (this) {
             if (mCamera != null) {
                 mCamera.stopPreview();
+                mCamera.setPreviewCallback(null);
+
                 mCamera.release();
             }
             mCamera = null;
@@ -186,8 +218,10 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 mFrameChain[0].release();
                 mFrameChain[1].release();
             }
-            if (mCameraFrame != null)
-                mCameraFrame.release();
+            if (mCameraFrame != null) {
+                mCameraFrame[0].release();
+                mCameraFrame[1].release();
+            }
         }
     }
 
@@ -267,9 +301,6 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
             mRgba.release();
         }
 
-        private JavaCameraFrame(CvCameraViewFrame obj) {
-        }
-
         private Mat mYuvFrameData;
         private Mat mRgba;
         private int mWidth;
@@ -291,7 +322,7 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
 
                 if (!mStopThread) {
                     if (!mFrameChain[mChainIdx].empty())
-                        deliverAndDrawFrame(mCameraFrame);
+                        deliverAndDrawFrame(mCameraFrame[mChainIdx]);
                     mChainIdx = 1 - mChainIdx;
                 }
             } while (!mStopThread);
