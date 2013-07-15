@@ -1,4 +1,4 @@
-From e54da90f9b32eda0441d639c259d8c0bd5a2240c Mon Sep 17 00:00:00 2001
+From f6c943bbae0a5d420bf2378b23e8d2ba53ba355f Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 10:54:11 -0800
 Subject: [PATCH 1/2] Squashed previous commits and dropped package.xml
