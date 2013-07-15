@@ -70,20 +70,35 @@ set(highgui_srcs
 
 file(GLOB highgui_ext_hdrs "include/opencv2/${name}/*.hpp" "include/opencv2/${name}/*.h")
 
-if(HAVE_QT)
+if(HAVE_QT5)
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+  QT5_ADD_RESOURCES(_RCC_OUTFILES src/window_QT.qrc)
+  list(APPEND highgui_srcs src/window_QT.cpp src/window_QT.h ${_RCC_OUTFILES})
+
+  foreach(dt5_dep Core Gui Widgets Test Concurrent)
+    add_definitions(${Qt5${dt5_dep}_DEFINITIONS})
+    include_directories(${Qt5${dt5_dep}_INCLUDE_DIRS})
+    list(APPEND HIGHGUI_LIBRARIES ${Qt5${dt5_dep}_LIBRARIES})
+  endforeach()
+
+  if(HAVE_QT_OPENGL)
+    add_definitions(${Qt5OpenGL_DEFINITIONS})
+    include_directories(${Qt5OpenGL_INCLUDE_DIRS})
+    list(APPEND HIGHGUI_LIBRARIES ${Qt5OpenGL_LIBRARIES})
+  endif()
+
+elseif(HAVE_QT)
   if (HAVE_QT_OPENGL)
     set(QT_USE_QTOPENGL TRUE)
   endif()
   include(${QT_USE_FILE})
 
-  if(QT_INCLUDE_DIR)
-    ocv_include_directories(${QT_INCLUDE_DIR})
-  endif()
-
   QT4_ADD_RESOURCES(_RCC_OUTFILES src/window_QT.qrc)
   QT4_WRAP_CPP(_MOC_OUTFILES src/window_QT.h)
 
-  list(APPEND HIGHGUI_LIBRARIES ${QT_LIBRARIES} ${QT_QTTEST_LIBRARY})
+  list(APPEND HIGHGUI_LIBRARIES ${QT_LIBRARIES})
   list(APPEND highgui_srcs src/window_QT.cpp ${_MOC_OUTFILES} ${_RCC_OUTFILES})
   ocv_check_flag_support(CXX -Wno-missing-declarations _have_flag)
   if(${_have_flag})
@@ -164,7 +179,11 @@ if(HAVE_XIMEA)
   if(XIMEA_LIBRARY_DIR)
     link_directories(${XIMEA_LIBRARY_DIR})
   endif()
-  list(APPEND HIGHGUI_LIBRARIES m3api)
+  if(CMAKE_CL_64)
+    list(APPEND HIGHGUI_LIBRARIES m3apiX64)
+  else()
+    list(APPEND HIGHGUI_LIBRARIES m3api)
+  endif()
 endif(HAVE_XIMEA)
 
 if(HAVE_FFMPEG)
@@ -215,7 +234,7 @@ endif()
 
 if(IOS)
   add_definitions(-DHAVE_IOS=1)
-  list(APPEND highgui_srcs src/cap_ios_abstract_camera.mm src/cap_ios_photo_camera.mm src/cap_ios_video_camera.mm)
+  list(APPEND highgui_srcs src/ios_conversions.mm src/cap_ios_abstract_camera.mm src/cap_ios_photo_camera.mm src/cap_ios_video_camera.mm)
   list(APPEND HIGHGUI_LIBRARIES "-framework Accelerate" "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreImage" "-framework CoreMedia" "-framework CoreVideo" "-framework QuartzCore" "-framework AssetsLibrary")
 endif()
 

@@ -103,6 +103,19 @@ if(UNIX AND NOT ANDROID)
   endif()
 endif()
 
+# Add these standard paths to the search paths for FIND_PATH
+# to find include files from these locations first
+if(MINGW)
+  if(EXISTS /mingw)
+      list(APPEND CMAKE_INCLUDE_PATH /mingw)
+  endif()
+  if(EXISTS /mingw32)
+      list(APPEND CMAKE_INCLUDE_PATH /mingw32)
+  endif()
+  if(EXISTS /mingw64)
+      list(APPEND CMAKE_INCLUDE_PATH /mingw64)
+  endif()
+endif()
 
 # ----------------------------------------------------------------------------
 # OpenCV cmake options
@@ -110,7 +123,7 @@ endif()
 
 # Optional 3rd party components
 # ===================================================
-OCV_OPTION(WITH_1394           "Include IEEE1394 support"                    ON   IF (UNIX AND NOT ANDROID AND NOT IOS) )
+OCV_OPTION(WITH_1394           "Include IEEE1394 support"                    ON   IF (NOT ANDROID AND NOT IOS) )
 OCV_OPTION(WITH_AVFOUNDATION   "Use AVFoundation for Video I/O"              ON   IF IOS)
 OCV_OPTION(WITH_CARBON         "Use Carbon for UI instead of Cocoa"          OFF  IF APPLE )
 OCV_OPTION(WITH_CUDA           "Include NVidia Cuda Runtime support"         ON   IF (CMAKE_VERSION VERSION_GREATER "2.8" AND NOT ANDROID AND NOT IOS) )
@@ -286,6 +299,10 @@ set(OPENCV_CONFIG_FILE_INCLUDE_DIR "${CMAKE_BINARY_DIR}/" CACHE PATH "Where to c
 add_definitions(-DHAVE_CVCONFIG_H)
 ocv_include_directories(${OPENCV_CONFIG_FILE_INCLUDE_DIR})
 
+# ----------------------------------------------------------------------------
+#  Path for additional modules
+# ----------------------------------------------------------------------------
+set(OPENCV_EXTRA_MODULES_PATH "" CACHE PATH "Where to look for additional OpenCV modules")
 
 # ----------------------------------------------------------------------------
 #  Autodetect if we are in a GIT repository
@@ -402,7 +419,7 @@ if(ANDROID)
   if(NOT ANDROID_TOOLS_Pkg_Revision GREATER 13)
     message(WARNING "OpenCV requires Android SDK tools revision 14 or newer. Otherwise tests and samples will no be compiled.")
   endif()
-elseif(ANT_EXECUTABLE)
+else()
   find_package(JNI)
 endif()
 
@@ -456,15 +473,15 @@ if(BUILD_EXAMPLES OR BUILD_ANDROID_EXAMPLES OR INSTALL_PYTHON_EXAMPLES)
 endif()
 
 if(ANDROID)
-  add_subdirectory(android/service)
+  add_subdirectory(platforms/android/service)
 endif()
 
 if(BUILD_ANDROID_PACKAGE)
-  add_subdirectory(android/package)
+  add_subdirectory(platforms/android/package)
 endif()
 
 if (ANDROID)
-  add_subdirectory(android/libinfo)
+  add_subdirectory(platforms/android/libinfo)
 endif()
 
 # ----------------------------------------------------------------------------
@@ -594,12 +611,15 @@ endif()
 status("")
 status("  GUI: ")
 
-if(HAVE_QT)
+if(HAVE_QT5)
+  status("    QT 5.x:"            HAVE_QT        THEN "YES (ver ${Qt5Core_VERSION_STRING})" ELSE NO)
+  status("    QT OpenGL support:" HAVE_QT_OPENGL THEN "YES (${Qt5OpenGL_LIBRARIES} ${Qt5OpenGL_VERSION_STRING})" ELSE NO)
+elseif(HAVE_QT)
   status("    QT 4.x:"            HAVE_QT        THEN "YES (ver ${QT_VERSION_MAJOR}.${QT_VERSION_MINOR}.${QT_VERSION_PATCH} ${QT_EDITION})" ELSE NO)
   status("    QT OpenGL support:" HAVE_QT_OPENGL THEN "YES (${QT_QTOPENGL_LIBRARY})" ELSE NO)
 else()
   if(DEFINED WITH_QT)
-    status("    QT 4.x:" NO)
+    status("    QT:" NO)
   endif()
   if(DEFINED WITH_WIN32UI)
     status("    Win32 UI:" HAVE_WIN32UI THEN YES ELSE NO)
@@ -827,7 +847,7 @@ status("    ant:"           ANT_EXECUTABLE      THEN "${ANT_EXECUTABLE} (ver ${A
 if(NOT ANDROID)
   status("    JNI:"         JNI_INCLUDE_DIRS    THEN "${JNI_INCLUDE_DIRS}"                                       ELSE NO)
 endif()
-status("    Java tests:"    BUILD_TESTS AND (NOT ANDROID OR CAN_BUILD_ANDROID_PROJECTS)                 THEN YES ELSE NO)
+status("    Java tests:"    BUILD_TESTS AND (CAN_BUILD_ANDROID_PROJECTS OR HAVE_opencv_java)            THEN YES ELSE NO)
 
 # ========================== documentation ==========================
 if(BUILD_DOCS)
