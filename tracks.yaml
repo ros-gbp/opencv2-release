@@ -13,7 +13,8 @@ tracks:
     name: opencv2
     patches: groovy
     release_inc: '2'
-    release_tag: :{version}
+    release_repo_url: null
+    release_tag: :{ask}
     ros_distro: groovy
     vcs_type: git
     vcs_uri: https://github.com/Itseez/opencv.git
