@@ -352,7 +352,7 @@ GPU_TEST_P(Add_Scalar, WithOutMask)
         cv::Mat dst_gold(size, depth.second, cv::Scalar::all(0));
         cv::add(mat, val, dst_gold, cv::noArray(), depth.second);
 
-        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 0.0);
+        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 1.0);
     }
 }
 
@@ -383,7 +383,7 @@ GPU_TEST_P(Add_Scalar, WithMask)
         cv::Mat dst_gold(size, depth.second, cv::Scalar::all(0));
         cv::add(mat, val, dst_gold, mask, depth.second);
 
-        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 0.0);
+        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 1.0);
     }
 }
 
@@ -567,7 +567,7 @@ GPU_TEST_P(Subtract_Scalar, WithOutMask)
         cv::Mat dst_gold(size, depth.second, cv::Scalar::all(0));
         cv::subtract(mat, val, dst_gold, cv::noArray(), depth.second);
 
-        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 0.0);
+        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 1.0);
     }
 }
 
@@ -598,7 +598,7 @@ GPU_TEST_P(Subtract_Scalar, WithMask)
         cv::Mat dst_gold(size, depth.second, cv::Scalar::all(0));
         cv::subtract(mat, val, dst_gold, mask, depth.second);
 
-        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 0.0);
+        EXPECT_MAT_NEAR(dst_gold, dst, depth.first >= CV_32F || depth.second >= CV_32F ? 1e-4 : 1.0);
     }
 }
 
@@ -1613,8 +1613,7 @@ INSTANTIATE_TEST_CASE_P(GPU_Core, Exp, testing::Combine(
 ////////////////////////////////////////////////////////////////////////////////
 // Compare_Array
 
-CV_ENUM(CmpCode, cv::CMP_EQ, cv::CMP_GT, cv::CMP_GE, cv::CMP_LT, cv::CMP_LE, cv::CMP_NE)
-#define ALL_CMP_CODES testing::Values(CmpCode(cv::CMP_EQ), CmpCode(cv::CMP_NE), CmpCode(cv::CMP_GT), CmpCode(cv::CMP_GE), CmpCode(cv::CMP_LT), CmpCode(cv::CMP_LE))
+CV_ENUM(CmpCode, CMP_EQ, CMP_NE, CMP_GT, CMP_GE, CMP_LT, CMP_LE)
 
 PARAM_TEST_CASE(Compare_Array, cv::gpu::DeviceInfo, cv::Size, MatDepth, CmpCode, UseRoi)
 {
@@ -1669,7 +1668,7 @@ INSTANTIATE_TEST_CASE_P(GPU_Core, Compare_Array, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     ALL_DEPTH,
-    ALL_CMP_CODES,
+    CmpCode::all(),
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1780,7 +1779,7 @@ INSTANTIATE_TEST_CASE_P(GPU_Core, Compare_Scalar, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
     TYPES(CV_8U, CV_64F, 1, 4),
-    ALL_CMP_CODES,
+    CmpCode::all(),
     WHOLE_SUBMAT));
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2149,7 +2148,7 @@ GPU_TEST_P(Min, Scalar)
 
         cv::Mat dst_gold = cv::min(src, val);
 
-        EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+        EXPECT_MAT_NEAR(dst_gold, dst, depth < CV_32F ? 1.0 : 1e-5);
     }
 }
 
@@ -2232,7 +2231,7 @@ GPU_TEST_P(Max, Scalar)
 
         cv::Mat dst_gold = cv::max(src, val);
 
-        EXPECT_MAT_NEAR(dst_gold, dst, 0.0);
+        EXPECT_MAT_NEAR(dst_gold, dst, depth < CV_32F ? 1.0 : 1e-5);
     }
 }
 
@@ -2371,7 +2370,7 @@ INSTANTIATE_TEST_CASE_P(GPU_Core, AddWeighted, testing::Combine(
 
 #ifdef HAVE_CUBLAS
 
-CV_FLAGS(GemmFlags, 0, cv::GEMM_1_T, cv::GEMM_2_T, cv::GEMM_3_T);
+CV_FLAGS(GemmFlags, 0, GEMM_1_T, GEMM_2_T, GEMM_3_T);
 #define ALL_GEMM_FLAGS testing::Values(GemmFlags(0), GemmFlags(cv::GEMM_1_T), GemmFlags(cv::GEMM_2_T), GemmFlags(cv::GEMM_3_T), GemmFlags(cv::GEMM_1_T | cv::GEMM_2_T), GemmFlags(cv::GEMM_1_T | cv::GEMM_3_T), GemmFlags(cv::GEMM_1_T | cv::GEMM_2_T | cv::GEMM_3_T))
 
 PARAM_TEST_CASE(GEMM, cv::gpu::DeviceInfo, cv::Size, MatType, GemmFlags, UseRoi)

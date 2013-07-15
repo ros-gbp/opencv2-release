@@ -243,7 +243,7 @@ typedef perf::TestBaseWithParam<Size_CvtMode_t> Size_CvtMode;
 PERF_TEST_P(Size_CvtMode, cvtColor8u,
             testing::Combine(
                 testing::Values(::perf::szODD, ::perf::szVGA, ::perf::sz1080p),
-                testing::ValuesIn(CvtMode::all())
+                CvtMode::all()
                 )
             )
 {
@@ -258,7 +258,8 @@ PERF_TEST_P(Size_CvtMode, cvtColor8u,
     declare.time(100);
     declare.in(src, WARMUP_RNG).out(dst);
 
-    TEST_CYCLE() cvtColor(src, dst, mode, ch.dcn);
+    int runs = sz.width <= 320 ? 70 : 5;
+    TEST_CYCLE_MULTIRUN(runs) cvtColor(src, dst, mode, ch.dcn);
 
     SANITY_CHECK(dst, 1);
 }
@@ -269,7 +270,7 @@ typedef perf::TestBaseWithParam<Size_CvtMode_Bayer_t> Size_CvtMode_Bayer;
 PERF_TEST_P(Size_CvtMode_Bayer, cvtColorBayer8u,
             testing::Combine(
                 testing::Values(::perf::szODD, ::perf::szVGA),
-                testing::ValuesIn(CvtModeBayer::all())
+                CvtModeBayer::all()
                 )
             )
 {
@@ -295,7 +296,7 @@ typedef perf::TestBaseWithParam<Size_CvtMode2_t> Size_CvtMode2;
 PERF_TEST_P(Size_CvtMode2, cvtColorYUV420,
             testing::Combine(
                 testing::Values(szVGA, sz1080p, Size(130, 60)),
-                testing::ValuesIn(CvtMode2::all())
+                CvtMode2::all()
                 )
             )
 {
@@ -320,7 +321,7 @@ typedef perf::TestBaseWithParam<Size_CvtMode3_t> Size_CvtMode3;
 PERF_TEST_P(Size_CvtMode3, cvtColorRGB2YUV420p,
             testing::Combine(
                 testing::Values(szVGA, sz720p, sz1080p, Size(130, 60)),
-                testing::ValuesIn(CvtMode3::all())
+                CvtMode3::all()
                 )
             )
 {
@@ -334,7 +335,8 @@ PERF_TEST_P(Size_CvtMode3, cvtColorRGB2YUV420p,
     declare.time(100);
     declare.in(src, WARMUP_RNG).out(dst);
 
-    TEST_CYCLE() cvtColor(src, dst, mode, ch.dcn);
+    int runs = (sz.width <= 640) ? 10 : 1;
+    TEST_CYCLE_MULTIRUN(runs) cvtColor(src, dst, mode, ch.dcn);
 
     SANITY_CHECK(dst, 1);
 }
