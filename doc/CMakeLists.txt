@@ -53,8 +53,8 @@ if(BUILD_DOCS AND HAVE_SPHINX)
     endif()
   endforeach()
 
-  file(GLOB_RECURSE _OPENCV_FILES_REF "${OpenCV_SOURCE_DIR}/android/service/doc/*.rst")
-  file(GLOB_RECURSE _OPENCV_FILES_REF_PICT "${OpenCV_SOURCE_DIR}/android/service/doc/*.png" "${OpenCV_SOURCE_DIR}/android/service/doc/*.jpg")
+  file(GLOB_RECURSE _OPENCV_FILES_REF "${OpenCV_SOURCE_DIR}/platforms/android/service/doc/*.rst")
+  file(GLOB_RECURSE _OPENCV_FILES_REF_PICT "${OpenCV_SOURCE_DIR}/platforms/android/service/doc/*.png" "${OpenCV_SOURCE_DIR}/platforms/android/service/doc/*.jpg")
   list(APPEND OPENCV_FILES_REF ${_OPENCV_FILES_REF})
   list(APPEND OPENCV_FILES_REF_PICT ${_OPENCV_FILES_REF_PICT})
 
@@ -68,7 +68,7 @@ if(BUILD_DOCS AND HAVE_SPHINX)
            ${OPENCV_FILES_UG} ${OPENCV_FILES_TUT} ${OPENCV_FILES_TUT_PICT})
 
   if(PDFLATEX_COMPILER)
-    add_custom_target(docs ALL
+    add_custom_target(docs
       COMMAND ${SPHINX_BUILD} -b latex -c ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/.. .
       COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/pics ${CMAKE_CURRENT_BINARY_DIR}/doc/opencv1/pics
       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/mymath.sty ${CMAKE_CURRENT_BINARY_DIR}

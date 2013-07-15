@@ -57,7 +57,7 @@ CV_IMPL void cvSetWindowProperty(const char* name, int prop_id, double prop_valu
 
         #if defined (HAVE_QT)
             cvSetModeWindow_QT(name,prop_value);
-        #elif defined WIN32 || defined _WIN32
+        #elif defined(HAVE_WIN32UI)
             cvSetModeWindow_W32(name,prop_value);
         #elif defined (HAVE_GTK)
             cvSetModeWindow_GTK(name,prop_value);
@@ -96,7 +96,7 @@ CV_IMPL double cvGetWindowProperty(const char* name, int prop_id)
 
         #if defined (HAVE_QT)
             return cvGetModeWindow_QT(name);
-        #elif defined WIN32 || defined _WIN32
+        #elif defined(HAVE_WIN32UI)
             return cvGetModeWindow_W32(name);
         #elif defined (HAVE_GTK)
             return cvGetModeWindow_GTK(name);
@@ -113,7 +113,7 @@ CV_IMPL double cvGetWindowProperty(const char* name, int prop_id)
 
         #if defined (HAVE_QT)
             return cvGetPropWindow_QT(name);
-        #elif defined WIN32 || defined _WIN32
+        #elif defined(HAVE_WIN32UI)
             return cvGetPropWindowAutoSize_W32(name);
         #elif defined (HAVE_GTK)
             return cvGetPropWindowAutoSize_GTK(name);
@@ -126,7 +126,7 @@ CV_IMPL double cvGetWindowProperty(const char* name, int prop_id)
 
         #if defined (HAVE_QT)
             return cvGetRatioWindow_QT(name);
-        #elif defined WIN32 || defined _WIN32
+        #elif defined(HAVE_WIN32UI)
             return cvGetRatioWindow_W32(name);
         #elif defined (HAVE_GTK)
             return cvGetRatioWindow_GTK(name);
@@ -139,7 +139,7 @@ CV_IMPL double cvGetWindowProperty(const char* name, int prop_id)
 
         #if defined (HAVE_QT)
             return cvGetOpenGlProp_QT(name);
-        #elif defined WIN32 || defined _WIN32
+        #elif defined(HAVE_WIN32UI)
             return cvGetOpenGlProp_W32(name);
         #elif defined (HAVE_GTK)
             return cvGetOpenGlProp_GTK(name);
@@ -256,12 +256,17 @@ namespace
 
 void cv::imshow( const string& winname, InputArray _img )
 {
+    const Size size = _img.size();
 #ifndef HAVE_OPENGL
-    Mat img = _img.getMat();
-    CvMat c_img = img;
-    cvShowImage(winname.c_str(), &c_img);
+    CV_Assert(size.width>0 && size.height>0);
+    {
+        Mat img = _img.getMat();
+        CvMat c_img = img;
+        cvShowImage(winname.c_str(), &c_img);
+    }
 #else
     const double useGl = getWindowProperty(winname, WND_PROP_OPENGL);
+    CV_Assert(size.width>0 && size.height>0);
 
     if (useGl <= 0)
     {
@@ -275,7 +280,6 @@ void cv::imshow( const string& winname, InputArray _img )
 
         if (autoSize > 0)
         {
-            Size size = _img.size();
             resizeWindow(winname, size.width, size.height);
         }
 
@@ -450,11 +454,11 @@ int cv::createButton(const string&, ButtonCallback, void*, int , bool )
 
 #endif
 
-#if   defined WIN32 || defined _WIN32         // see window_w32.cpp
+#if   defined(HAVE_WIN32UI)   // see window_w32.cpp
 #elif defined (HAVE_GTK)      // see window_gtk.cpp
-#elif defined (HAVE_COCOA)   // see window_carbon.cpp
+#elif defined (HAVE_COCOA)    // see window_carbon.cpp
 #elif defined (HAVE_CARBON)
-#elif defined (HAVE_QT) //YV see window_QT.cpp
+#elif defined (HAVE_QT)       //YV see window_QT.cpp
 
 #else
 

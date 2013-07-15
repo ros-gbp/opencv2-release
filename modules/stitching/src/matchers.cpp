@@ -66,21 +66,17 @@ struct DistIdxPair
 };
 
 
-struct MatchPairsBody
+struct MatchPairsBody : ParallelLoopBody
 {
-    MatchPairsBody(const MatchPairsBody& other)
-            : matcher(other.matcher), features(other.features),
-              pairwise_matches(other.pairwise_matches), near_pairs(other.near_pairs) {}
-
     MatchPairsBody(FeaturesMatcher &_matcher, const vector<ImageFeatures> &_features,
                    vector<MatchesInfo> &_pairwise_matches, vector<pair<int,int> > &_near_pairs)
             : matcher(_matcher), features(_features),
               pairwise_matches(_pairwise_matches), near_pairs(_near_pairs) {}
 
-    void operator ()(const BlockedRange &r) const
+    void operator ()(const Range &r) const
     {
         const int num_images = static_cast<int>(features.size());
-        for (int i = r.begin(); i < r.end(); ++i)
+        for (int i = r.start; i < r.end; ++i)
         {
             int from = near_pairs[i].first;
             int to = near_pairs[i].second;
@@ -348,8 +344,15 @@ SurfFeaturesFinder::SurfFeaturesFinder(double hess_thresh, int num_octaves, int 
 void SurfFeaturesFinder::find(const Mat &image, ImageFeatures &features)
 {
     Mat gray_image;
-    CV_Assert(image.type() == CV_8UC3);
-    cvtColor(image, gray_image, CV_BGR2GRAY);
+    CV_Assert((image.type() == CV_8UC3) || (image.type() == CV_8UC1));
+    if(image.type() == CV_8UC3)
+    {
+        cvtColor(image, gray_image, CV_BGR2GRAY);
+    }
+    else
+    {
+        gray_image = image;
+    }
     if (surf == 0)
     {
         detector_->detect(gray_image, features.keypoints);
@@ -429,7 +432,7 @@ void OrbFeaturesFinder::find(const Mat &image, ImageFeatures &features)
     }
 }
 
-#ifdef HAVE_OPENCV_GPU
+#if defined(HAVE_OPENCV_NONFREE) && defined(HAVE_OPENCV_GPU)
 SurfFeaturesFinderGpu::SurfFeaturesFinderGpu(double hess_thresh, int num_octaves, int num_layers,
                                              int num_octaves_descr, int num_layers_descr)
 {
@@ -519,9 +522,9 @@ void FeaturesMatcher::operator ()(const vector<ImageFeatures> &features, vector<
     MatchPairsBody body(*this, features, pairwise_matches, near_pairs);
 
     if (is_thread_safe_)
-        parallel_for(BlockedRange(0, static_cast<int>(near_pairs.size())), body);
+        parallel_for_(Range(0, static_cast<int>(near_pairs.size())), body);
     else
-        body(BlockedRange(0, static_cast<int>(near_pairs.size())));
+        body(Range(0, static_cast<int>(near_pairs.size())));
     LOGLN_CHAT("");
 }
 

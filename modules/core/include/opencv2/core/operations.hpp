@@ -686,7 +686,7 @@ template<typename _Tp> static inline
 Scalar operator * (const Matx<_Tp, 4, 4>& a, const Scalar& b)
 {
     Matx<double, 4, 1> c(Matx<double, 4, 4>(a), b, Matx_MatMulOp());
-    return reinterpret_cast<const Scalar&>(c);
+    return static_cast<const Scalar&>(c);
 }
 
 
@@ -694,7 +694,7 @@ static inline
 Scalar operator * (const Matx<double, 4, 4>& a, const Scalar& b)
 {
     Matx<double, 4, 1> c(a, b, Matx_MatMulOp());
-    return reinterpret_cast<const Scalar&>(c);
+    return static_cast<const Scalar&>(c);
 }
 
 
@@ -2916,6 +2916,9 @@ CV_EXPORTS FileStorage& operator << (FileStorage& fs, const string& str);
 
 static inline FileStorage& operator << (FileStorage& fs, const char* str)
 { return (fs << string(str)); }
+
+static inline FileStorage& operator << (FileStorage& fs, char* value)
+{ return (fs << string(value)); }
 
 inline FileNode::FileNode() : fs(0), node(0) {}
 inline FileNode::FileNode(const CvFileStorage* _fs, const CvFileNode* _node)
