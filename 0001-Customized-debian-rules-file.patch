@@ -1,16 +1,16 @@
-From c1ce4d75e0bf8f804f8b7729a100472f60b600b9 Mon Sep 17 00:00:00 2001
+From 229cd6609b297d3c7ae533a984a1a386843e9825 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 13 Mar 2013 11:08:16 -0700
 Subject: [PATCH] Customized debian rules file
 
 ---
- debian/rules.em |   25 +++++++++++++++++++++----
+ debian/rules.cmake.em | 25 +++++++++++++++++++++----
  1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/debian/rules.em b/debian/rules.em
+diff --git a/debian/rules.cmake.em b/debian/rules.cmake.em
 index d45dd5f..37957ce 100644
---- a/debian/rules.em
-+++ b/debian/rules.em
+--- a/debian/rules.cmake.em
++++ b/debian/rules.cmake.em
 @@ -16,6 +16,22 @@ export DH_OPTIONS=-v --buildsystem=cmake
  export LDFLAGS=
  export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
@@ -52,5 +52,5 @@ index d45dd5f..37957ce 100644
  override_dh_auto_build:
  	# In case we're installing to a non-standard location, look for a setup.sh
 -- 
-1.7.9.5
+1.8.1.2
 
