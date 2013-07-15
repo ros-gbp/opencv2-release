@@ -22,6 +22,7 @@
 //    Jiang Liyuan, jlyuan001.good@163.com
 //    Rock Li, Rock.Li@amd.com
 //    Zailong Wu, bullet@yeah.net
+//    Peng Xiao, pengxiao@outlook.com
 //
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
@@ -62,8 +63,6 @@ namespace cv
     namespace ocl
     {
         ////////////////////////////////OpenCL kernel strings/////////////////////
-        extern const char *bitwise;
-        extern const char *bitwiseM;
         extern const char *transpose_kernel;
         extern const char *arithm_nonzero;
         extern const char *arithm_sum;
@@ -77,24 +76,13 @@ namespace cv
         extern const char *arithm_add;
         extern const char *arithm_add_scalar;
         extern const char *arithm_add_scalar_mask;
+        extern const char *arithm_bitwise_binary;
+        extern const char *arithm_bitwise_binary_mask;
+        extern const char *arithm_bitwise_binary_scalar;
+        extern const char *arithm_bitwise_binary_scalar_mask;
         extern const char *arithm_bitwise_not;
-        extern const char *arithm_bitwise_and;
-        extern const char *arithm_bitwise_and_mask;
-        extern const char *arithm_bitwise_and_scalar;
-        extern const char *arithm_bitwise_and_scalar_mask;
-        extern const char *arithm_bitwise_or;
-        extern const char *arithm_bitwise_or_mask;
-        extern const char *arithm_bitwise_or_scalar;
-        extern const char *arithm_bitwise_or_scalar_mask;
-        extern const char *arithm_bitwise_xor;
-        extern const char *arithm_bitwise_xor_mask;
-        extern const char *arithm_bitwise_xor_scalar;
-        extern const char *arithm_bitwise_xor_scalar_mask;
         extern const char *arithm_compare_eq;
         extern const char *arithm_compare_ne;
-        extern const char *arithm_sub;
-        extern const char *arithm_sub_scalar;
-        extern const char *arithm_sub_scalar_mask;
         extern const char *arithm_mul;
         extern const char *arithm_div;
         extern const char *arithm_absdiff;
@@ -130,9 +118,10 @@ inline int divUp(int total, int grain)
 /////////////////////// add subtract multiply divide /////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 template<typename T>
-void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName, const char **kernelString, void *_scalar)
+void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, 
+                    string kernelName, const char **kernelString, void *_scalar, int op_type = 0)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -186,16 +175,27 @@ void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string 
         scalar = (T)scalar1;
         args.push_back( make_pair( sizeof(T), (void *)&scalar ));
     }
-
-    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, -1, depth);
+    switch(op_type)
+    {
+        case MAT_ADD:
+            openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, -1, depth, "-D ARITHM_ADD");
+            break;
+        case MAT_SUB:
+            openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, -1, depth, "-D ARITHM_SUB");
+            break;
+        default:
+            openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, -1, depth);
+    }
 }
-static void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName, const char **kernelString)
+static void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, 
+                           string kernelName, const char **kernelString, int op_type = 0)
 {
-    arithmetic_run<char>(src1, src2, dst, kernelName, kernelString, (void *)NULL);
+    arithmetic_run<char>(src1, src2, dst, kernelName, kernelString, (void *)NULL, op_type);
 }
-static void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask, string kernelName, const char **kernelString)
+static void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask, 
+                           string kernelName, const char **kernelString, int op_type = 0)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -248,39 +248,50 @@ static void arithmetic_run(const oclMat &src1, const oclMat &src2, oclMat &dst, 
     args.push_back( make_pair( sizeof(cl_int), (void *)&cols ));
     args.push_back( make_pair( sizeof(cl_int), (void *)&dst_step1 ));
 
-    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth);
+    switch (op_type)
+    {
+        case MAT_ADD:
+            openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth, "-D ARITHM_ADD");
+            break;
+        case MAT_SUB:
+            openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth, "-D ARITHM_SUB");
+            break;
+        default:
+            openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth);
+    }
 }
 void cv::ocl::add(const oclMat &src1, const oclMat &src2, oclMat &dst)
 {
-    arithmetic_run(src1, src2, dst, "arithm_add", &arithm_add);
+    arithmetic_run(src1, src2, dst, "arithm_add", &arithm_add, MAT_ADD);
 }
 void cv::ocl::add(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask)
 {
-    arithmetic_run(src1, src2, dst, mask, "arithm_add_with_mask", &arithm_add);
+    arithmetic_run(src1, src2, dst, mask, "arithm_add_with_mask", &arithm_add, MAT_ADD);
 }
 
 void cv::ocl::subtract(const oclMat &src1, const oclMat &src2, oclMat &dst)
 {
-    arithmetic_run(src1, src2, dst, "arithm_sub", &arithm_sub);
+    arithmetic_run(src1, src2, dst, "arithm_add", &arithm_add, MAT_SUB);
 }
 void cv::ocl::subtract(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask)
 {
-    arithmetic_run(src1, src2, dst, mask, "arithm_sub_with_mask", &arithm_sub);
+    arithmetic_run(src1, src2, dst, mask, "arithm_add_with_mask", &arithm_add, MAT_SUB);
 }
 typedef void (*MulDivFunc)(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName,
                            const char **kernelString, void *scalar);
 
 void cv::ocl::multiply(const oclMat &src1, const oclMat &src2, oclMat &dst, double scalar)
 {
-    if((src1.clCxt -> impl -> double_support != 0) && (src1.depth() == CV_64F))
+    if(src1.clCxt->supportsFeature(Context::CL_DOUBLE) && (src1.depth() == CV_64F))
         arithmetic_run<double>(src1, src2, dst, "arithm_mul", &arithm_mul, (void *)(&scalar));
     else
         arithmetic_run<float>(src1, src2, dst, "arithm_mul", &arithm_mul, (void *)(&scalar));
 }
+
 void cv::ocl::divide(const oclMat &src1, const oclMat &src2, oclMat &dst, double scalar)
 {
 
-    if(src1.clCxt -> impl -> double_support != 0)
+    if(src1.clCxt->supportsFeature(Context::CL_DOUBLE))
         arithmetic_run<double>(src1, src2, dst, "arithm_div", &arithm_div, (void *)(&scalar));
     else
         arithmetic_run<float>(src1, src2, dst, "arithm_div", &arithm_div, (void *)(&scalar));
@@ -289,7 +300,7 @@ void cv::ocl::divide(const oclMat &src1, const oclMat &src2, oclMat &dst, double
 template <typename WT , typename CL_WT>
 void arithmetic_scalar_run(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask, string kernelName, const char **kernelString, int isMatSubScalar)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -351,17 +362,14 @@ void arithmetic_scalar_run(const oclMat &src1, const Scalar &src2, oclMat &dst, 
     args.push_back( make_pair( sizeof(cl_int) , (void *)&cols ));
     args.push_back( make_pair( sizeof(cl_int) , (void *)&dst_step1 ));
     if(isMatSubScalar != 0)
-    {
-        isMatSubScalar = isMatSubScalar > 0 ? 1 : 0;
-        args.push_back( make_pair( sizeof(cl_int) , (void *)&isMatSubScalar));
-    }
-
-    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth);
+        openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth, "-D ARITHM_SUB");
+    else
+        openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth, "-D ARITHM_ADD");
 }
 
 static void arithmetic_scalar_run(const oclMat &src, oclMat &dst, string kernelName, const char **kernelString, double scalar)
 {
-    if(src.clCxt -> impl -> double_support == 0 && src.type() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -405,11 +413,11 @@ static void arithmetic_scalar_run(const oclMat &src, oclMat &dst, string kernelN
     args.push_back( make_pair( sizeof(cl_int), (void *)&cols ));
     args.push_back( make_pair( sizeof(cl_int), (void *)&dst_step1 ));
 
-    if(src.clCxt -> impl -> double_support != 0)
+    float f_scalar = (float)scalar;
+    if(src.clCxt->supportsFeature(Context::CL_DOUBLE))
         args.push_back( make_pair( sizeof(cl_double), (void *)&scalar ));
     else
     {
-        float f_scalar = (float)scalar;
         args.push_back( make_pair( sizeof(cl_float), (void *)&f_scalar));
     }
 
@@ -452,19 +460,24 @@ void cv::ocl::add(const oclMat &src1, const Scalar &src2, oclMat &dst, const ocl
 
 void cv::ocl::subtract(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask)
 {
-    string kernelName = mask.data ? "arithm_s_sub_with_mask" : "arithm_s_sub";
-    const char **kernelString = mask.data ? &arithm_sub_scalar_mask : &arithm_sub_scalar;
+    string kernelName = mask.data ? "arithm_s_add_with_mask" : "arithm_s_add";
+    const char **kernelString = mask.data ? &arithm_add_scalar_mask : &arithm_add_scalar;
     arithmetic_scalar( src1, src2, dst, mask, kernelName, kernelString, 1);
 }
 void cv::ocl::subtract(const Scalar &src2, const oclMat &src1, oclMat &dst, const oclMat &mask)
 {
-    string kernelName = mask.data ? "arithm_s_sub_with_mask" : "arithm_s_sub";
-    const char **kernelString = mask.data ? &arithm_sub_scalar_mask : &arithm_sub_scalar;
+    string kernelName = mask.data ? "arithm_s_add_with_mask" : "arithm_s_add";
+    const char **kernelString = mask.data ? &arithm_add_scalar_mask : &arithm_add_scalar;
     arithmetic_scalar( src1, src2, dst, mask, kernelName, kernelString, -1);
+}
+void cv::ocl::multiply(double scalar, const oclMat &src, oclMat &dst)
+{
+    string kernelName = "arithm_muls";
+    arithmetic_scalar_run( src, dst, kernelName, &arithm_mul, scalar);
 }
 void cv::ocl::divide(double scalar, const oclMat &src,  oclMat &dst)
 {
-    if(src.clCxt -> impl -> double_support == 0)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE))
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -524,7 +537,7 @@ static void compare_run(const oclMat &src1, const oclMat &src2, oclMat &dst, str
 
 void cv::ocl::compare(const oclMat &src1, const oclMat &src2, oclMat &dst , int cmpOp)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
@@ -599,7 +612,7 @@ static void arithmetic_sum_buffer_run(const oclMat &src, cl_mem &dst, int vlen ,
 template <typename T>
 Scalar arithmetic_sum(const oclMat &src, int type = 0)
 {
-    size_t groupnum = src.clCxt->impl->maxComputeUnits;
+    size_t groupnum = src.clCxt->computeUnits();
     CV_Assert(groupnum != 0);
     int vlen = src.oclchannels() == 3 ? 12 : 8, dbsize = groupnum * vlen;
     Context *clCxt = src.clCxt;
@@ -627,7 +640,7 @@ Scalar arithmetic_sum(const oclMat &src, int type = 0)
 typedef Scalar (*sumFunc)(const oclMat &src, int type);
 Scalar cv::ocl::sum(const oclMat &src)
 {
-    if(src.clCxt->impl->double_support == 0 && src.depth() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.depth() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "select device don't support double");
     }
@@ -638,13 +651,13 @@ Scalar cv::ocl::sum(const oclMat &src)
     };
 
     sumFunc func;
-    func = functab[src.clCxt->impl->double_support];
+    func = functab[(int)src.clCxt->supportsFeature(Context::CL_DOUBLE)];
     return func(src, 0);
 }
 
 Scalar cv::ocl::absSum(const oclMat &src)
 {
-    if(src.clCxt->impl->double_support == 0 && src.depth() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.depth() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "select device don't support double");
     }
@@ -655,13 +668,13 @@ Scalar cv::ocl::absSum(const oclMat &src)
     };
 
     sumFunc func;
-    func = functab[src.clCxt->impl->double_support];
+    func = functab[(int)src.clCxt->supportsFeature(Context::CL_DOUBLE)];
     return func(src, 1);
 }
 
 Scalar cv::ocl::sqrSum(const oclMat &src)
 {
-    if(src.clCxt->impl->double_support == 0 && src.depth() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.depth() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "select device don't support double");
     }
@@ -672,7 +685,7 @@ Scalar cv::ocl::sqrSum(const oclMat &src)
     };
 
     sumFunc func;
-    func = functab[src.clCxt->impl->double_support];
+    func = functab[(int)src.clCxt->supportsFeature(Context::CL_DOUBLE)];
     return func(src, 2);
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -769,48 +782,58 @@ static void arithmetic_minMax_mask_run(const oclMat &src, const oclMat &mask, cl
     }
 }
 
-template <typename T> void arithmetic_minMax(const oclMat &src, double *minVal, double *maxVal, const oclMat &mask)
+template <typename T> void arithmetic_minMax(const oclMat &src, double *minVal, double *maxVal,
+                                             const oclMat &mask, oclMat &buf)
 {
-    size_t groupnum = src.clCxt->impl->maxComputeUnits;
+    size_t groupnum = src.clCxt->computeUnits();
     CV_Assert(groupnum != 0);
     groupnum = groupnum * 2;
     int vlen = 8;
     int dbsize = groupnum * 2 * vlen * sizeof(T) ;
-    Context *clCxt = src.clCxt;
-    cl_mem dstBuffer = openCLCreateBuffer(clCxt, CL_MEM_WRITE_ONLY, dbsize);
-    *minVal = std::numeric_limits<double>::max() , *maxVal = -std::numeric_limits<double>::max();
+
+    ensureSizeIsEnough(1, dbsize, CV_8UC1, buf);
+
+    cl_mem buf_data = reinterpret_cast<cl_mem>(buf.data);
+
     if (mask.empty())
     {
-        arithmetic_minMax_run(src, mask, dstBuffer, vlen, groupnum, "arithm_op_minMax");
+        arithmetic_minMax_run(src, mask, buf_data, vlen, groupnum, "arithm_op_minMax");
     }
     else
     {
-        arithmetic_minMax_mask_run(src, mask, dstBuffer, vlen, groupnum, "arithm_op_minMax_mask");
+        arithmetic_minMax_mask_run(src, mask, buf_data, vlen, groupnum, "arithm_op_minMax_mask");
     }
-    T *p = new T[groupnum * vlen * 2];
-    memset(p, 0, dbsize);
-    openCLReadBuffer(clCxt, dstBuffer, (void *)p, dbsize);
-    if(minVal != NULL){
+
+    Mat matbuf = Mat(buf);
+    T *p = matbuf.ptr<T>();
+    if(minVal != NULL)
+    {
+        *minVal = std::numeric_limits<double>::max();
         for(int i = 0; i < vlen * (int)groupnum; i++)
         {
             *minVal = *minVal < p[i] ? *minVal : p[i];
         }
     }
-    if(maxVal != NULL){
+    if(maxVal != NULL)
+    {
+        *maxVal = -std::numeric_limits<double>::max();
         for(int i = vlen * (int)groupnum; i < 2 * vlen * (int)groupnum; i++)
         {
             *maxVal = *maxVal > p[i] ? *maxVal : p[i];
         }
     }
-    delete[] p;
-    openCLFree(dstBuffer);
 }
 
-typedef void (*minMaxFunc)(const oclMat &src, double *minVal, double *maxVal, const oclMat &mask);
+typedef void (*minMaxFunc)(const oclMat &src, double *minVal, double *maxVal, const oclMat &mask, oclMat &buf);
 void cv::ocl::minMax(const oclMat &src, double *minVal, double *maxVal, const oclMat &mask)
 {
+    oclMat buf;
+    minMax_buf(src, minVal, maxVal, mask, buf);
+}
+void cv::ocl::minMax_buf(const oclMat &src, double *minVal, double *maxVal, const oclMat &mask, oclMat &buf)
+{
     CV_Assert(src.oclchannels() == 1);
-    if(src.clCxt->impl->double_support == 0 && src.depth() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.depth() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "select device don't support double");
     }
@@ -827,7 +850,7 @@ void cv::ocl::minMax(const oclMat &src, double *minVal, double *maxVal, const oc
     };
     minMaxFunc func;
     func = functab[src.depth()];
-    func(src, minVal, maxVal, mask);
+    func(src, minVal, maxVal, mask, buf);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -894,7 +917,7 @@ double cv::ocl::norm(const oclMat &src1, const oclMat &src2, int normType)
 //////////////////////////////////////////////////////////////////////////////
 static void arithmetic_flip_rows_run(const oclMat &src, oclMat &dst, string kernelName)
 {
-    if(src.clCxt -> impl -> double_support == 0 && src.type() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -943,7 +966,7 @@ static void arithmetic_flip_rows_run(const oclMat &src, oclMat &dst, string kern
 }
 static void arithmetic_flip_cols_run(const oclMat &src, oclMat &dst, string kernelName, bool isVertical)
 {
-    if(src.clCxt -> impl -> double_support == 0 && src.type() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -1123,7 +1146,7 @@ static void arithmetic_exp_log_run(const oclMat &src, oclMat &dst, string kernel
     CV_Assert( src.type() == CV_32F || src.type() == CV_64F);
 
     Context  *clCxt = src.clCxt;
-    if(clCxt -> impl -> double_support == 0 && src.type() == CV_64F)
+    if(!clCxt->supportsFeature(Context::CL_DOUBLE) && src.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -1164,7 +1187,7 @@ void cv::ocl::log(const oclMat &src, oclMat &dst)
 //////////////////////////////////////////////////////////////////////////////
 static void arithmetic_magnitude_phase_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -1212,7 +1235,7 @@ void cv::ocl::magnitude(const oclMat &src1, const oclMat &src2, oclMat &dst)
 
 static void arithmetic_phase_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName, const char **kernelString)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -1276,7 +1299,7 @@ void cv::ocl::phase(const oclMat &x, const oclMat &y, oclMat &Angle , bool angle
 static void arithmetic_cartToPolar_run(const oclMat &src1, const oclMat &src2, oclMat &dst_mag, oclMat &dst_cart,
                                 string kernelName, bool angleInDegrees)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -1331,7 +1354,7 @@ void cv::ocl::cartToPolar(const oclMat &x, const oclMat &y, oclMat &mag, oclMat 
 static void arithmetic_ptc_run(const oclMat &src1, const oclMat &src2, oclMat &dst1, oclMat &dst2, bool angleInDegrees,
                         string kernelName)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -1452,7 +1475,7 @@ void arithmetic_minMaxLoc(const oclMat &src, double *minVal, double *maxVal,
                           Point *minLoc, Point *maxLoc, const oclMat &mask)
 {
     CV_Assert(src.oclchannels() == 1);
-    size_t groupnum = src.clCxt->impl->maxComputeUnits;
+    size_t groupnum = src.clCxt->computeUnits();
     CV_Assert(groupnum != 0);
     int minloc = -1 , maxloc = -1;
     int vlen = 4, dbsize = groupnum * vlen * 4 * sizeof(T) ;
@@ -1513,7 +1536,7 @@ typedef void (*minMaxLocFunc)(const oclMat &src, double *minVal, double *maxVal,
 void cv::ocl::minMaxLoc(const oclMat &src, double *minVal, double *maxVal,
                         Point *minLoc, Point *maxLoc, const oclMat &mask)
 {
-    if(src.clCxt->impl->double_support == 0 && src.depth() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.depth() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "select device don't support double");
     }
@@ -1524,7 +1547,7 @@ void cv::ocl::minMaxLoc(const oclMat &src, double *minVal, double *maxVal,
     };
 
     minMaxLocFunc func;
-    func = functab[src.clCxt->impl->double_support];
+    func = functab[(int)src.clCxt->supportsFeature(Context::CL_DOUBLE)];
     func(src, minVal, maxVal, minLoc, maxLoc, mask);
 }
 
@@ -1559,8 +1582,8 @@ static void arithmetic_countNonZero_run(const oclMat &src, cl_mem &dst, int vlen
 
 int cv::ocl::countNonZero(const oclMat &src)
 {
-    size_t groupnum = src.clCxt->impl->maxComputeUnits;
-    if(src.clCxt->impl->double_support == 0 && src.depth() == CV_64F)
+    size_t groupnum = src.clCxt->computeUnits();
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.depth() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "select device don't support double");
     }
@@ -1630,7 +1653,8 @@ static void bitwise_run(const oclMat &src1, oclMat &dst, string kernelName, cons
 
 
 template<typename T>
-void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName, const char **kernelString, void *_scalar)
+void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName,
+ const char **kernelString, void *_scalar, const char* _opt = NULL)
 {
     dst.create(src1.size(), src1.type());
     CV_Assert(src1.cols == src2.cols && src2.cols == dst.cols &&
@@ -1673,20 +1697,23 @@ void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string ker
     args.push_back( make_pair( sizeof(cl_int), (void *)&cols ));
     args.push_back( make_pair( sizeof(cl_int), (void *)&dst_step1 ));
 
+    T scalar;
     if(_scalar != NULL)
     {
         double scalar1 = *((double *)_scalar);
-        T scalar = (T)scalar1;
+        scalar = (T)scalar1;
         args.push_back( make_pair( sizeof(T), (void *)&scalar ));
     }
 
-    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, -1, depth);
+    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, -1, depth, _opt);
 }
-static void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst, string kernelName, const char **kernelString)
+static void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst,
+ string kernelName, const char **kernelString, const char* _opt = NULL)
 {
-    bitwise_run<char>(src1, src2, dst, kernelName, kernelString, (void *)NULL);
+    bitwise_run<char>(src1, src2, dst, kernelName, kernelString, (void *)NULL, _opt);
 }
-static void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask, string kernelName, const char **kernelString)
+static void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst,
+ const oclMat &mask, string kernelName, const char **kernelString, const char* _opt = NULL)
 {
     dst.create(src1.size(), src1.type());
     CV_Assert(src1.cols == src2.cols && src2.cols == dst.cols &&
@@ -1734,12 +1761,13 @@ static void bitwise_run(const oclMat &src1, const oclMat &src2, oclMat &dst, con
     args.push_back( make_pair( sizeof(cl_int), (void *)&cols ));
     args.push_back( make_pair( sizeof(cl_int), (void *)&dst_step1 ));
 
-    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth);
+    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth, _opt);
 }
 
 
 template <typename WT , typename CL_WT>
-void bitwise_scalar_run(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask, string kernelName, const char **kernelString, int isMatSubScalar)
+void bitwise_scalar_run(const oclMat &src1, const Scalar &src2, oclMat &dst,
+ const oclMat &mask, string kernelName, const char **kernelString, int isMatSubScalar, const char* opt = NULL)
 {
     dst.create(src1.size(), src1.type());
 
@@ -1801,14 +1829,16 @@ void bitwise_scalar_run(const oclMat &src1, const Scalar &src2, oclMat &dst, con
         args.push_back( make_pair( sizeof(cl_int) , (void *)&isMatSubScalar));
     }
 
-    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth);
+    openCLExecuteKernel(clCxt, kernelString, kernelName, globalThreads, localThreads, args, channels, depth, opt);
 }
 
 
-typedef void (*BitwiseFuncS)(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask, string kernelName, const char **kernelString, int isMatSubScalar);
+typedef void (*BitwiseFuncS)(const oclMat &src1, const Scalar &src2, oclMat &dst,
+ const oclMat &mask, string kernelName, const char **kernelString, int isMatSubScalar, const char* opt);
 
 
-static void bitwise_scalar(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask, string kernelName, const char **kernelString, int isMatSubScalar)
+static void bitwise_scalar(const oclMat &src1, const Scalar &src2, oclMat &dst,
+ const oclMat &mask, string kernelName, const char **kernelString, int isMatSubScalar, const char* opt)
 {
     static BitwiseFuncS tab[8] =
     {
@@ -1836,16 +1866,17 @@ static void bitwise_scalar(const oclMat &src1, const Scalar &src2, oclMat &dst, 
     BitwiseFuncS func = tab[src1.depth()];
     if(func == 0)
         cv::ocl::error("Unsupported arithmetic operation", __FILE__, __LINE__);
-    func(src1, src2, dst, mask, kernelName, kernelString, isMatSubScalar);
+    func(src1, src2, dst, mask, kernelName, kernelString, isMatSubScalar, opt);
 }
-static void bitwise_scalar(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask, string kernelName, const char **kernelString)
+static void bitwise_scalar(const oclMat &src1, const Scalar &src2, oclMat &dst,
+ const oclMat &mask, string kernelName, const char **kernelString, const char * opt = NULL)
 {
-    bitwise_scalar(src1, src2, dst, mask, kernelName, kernelString, 0);
+    bitwise_scalar(src1, src2, dst, mask, kernelName, kernelString, 0, opt);
 }
 
 void cv::ocl::bitwise_not(const oclMat &src, oclMat &dst)
 {
-    if(src.clCxt -> impl -> double_support == 0 && src.type() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
@@ -1858,97 +1889,102 @@ void cv::ocl::bitwise_not(const oclMat &src, oclMat &dst)
 void cv::ocl::bitwise_or(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask)
 {
     // dst.create(src1.size(),src1.type());
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
     }
-    oclMat emptyMat;
-    string kernelName = mask.empty() ? "arithm_bitwise_or" : "arithm_bitwise_or_with_mask";
+
+    string kernelName = mask.empty() ? "arithm_bitwise_binary" : "arithm_bitwise_binary_with_mask";
+    static const char opt [] = "-D OP_BINARY=|";
     if (mask.empty())
-        bitwise_run(src1, src2, dst, kernelName, &arithm_bitwise_or);
+        bitwise_run(src1, src2, dst, kernelName, &arithm_bitwise_binary, opt);
     else
-        bitwise_run(src1, src2, dst, mask, kernelName, &arithm_bitwise_or_mask);
+        bitwise_run(src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_mask, opt);
 }
 
 
 void cv::ocl::bitwise_or(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
     }
-    string kernelName = mask.data ? "arithm_s_bitwise_or_with_mask" : "arithm_s_bitwise_or";
+    static const char opt [] = "-D OP_BINARY=|";
+    string kernelName = mask.data ? "arithm_s_bitwise_binary_with_mask" : "arithm_s_bitwise_binary";
     if (mask.data)
-        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_or_scalar_mask);
+        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_scalar_mask, opt);
     else
-        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_or_scalar);
+        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_scalar, opt);
 }
 
 void cv::ocl::bitwise_and(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask)
 {
     //    dst.create(src1.size(),src1.type());
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
     }
     oclMat emptyMat;
 
-    string kernelName = mask.empty() ? "arithm_bitwise_and" : "arithm_bitwise_and_with_mask";
+    string kernelName = mask.empty() ? "arithm_bitwise_binary" : "arithm_bitwise_binary_with_mask";
 
+    static const char opt [] = "-D OP_BINARY=&";
     if (mask.empty())
-        bitwise_run(src1, src2, dst, kernelName, &arithm_bitwise_and);
+        bitwise_run(src1, src2, dst, kernelName, &arithm_bitwise_binary, opt);
     else
-        bitwise_run(src1, src2, dst, mask, kernelName, &arithm_bitwise_and_mask);
+        bitwise_run(src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_mask, opt);
 }
 
 void cv::ocl::bitwise_and(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
     }
-    string kernelName = mask.data ? "arithm_s_bitwise_and_with_mask" : "arithm_s_bitwise_and";
+    static const char opt [] = "-D OP_BINARY=&";
+    string kernelName = mask.data ? "arithm_s_bitwise_binary_with_mask" : "arithm_s_bitwise_binary";
     if (mask.data)
-        bitwise_scalar(src1, src2, dst, mask, kernelName, &arithm_bitwise_and_scalar_mask);
+        bitwise_scalar(src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_scalar_mask, opt);
     else
-        bitwise_scalar(src1, src2, dst, mask, kernelName, &arithm_bitwise_and_scalar);
+        bitwise_scalar(src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_scalar, opt);
 }
 
 void cv::ocl::bitwise_xor(const oclMat &src1, const oclMat &src2, oclMat &dst, const oclMat &mask)
 {
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
     }
-    oclMat emptyMat;
-    string kernelName = mask.empty() ? "arithm_bitwise_xor" : "arithm_bitwise_xor_with_mask";
+    string kernelName = mask.empty() ? "arithm_bitwise_binary" : "arithm_bitwise_binary_with_mask";
 
+    static const char opt [] = "-D OP_BINARY=^";
 
     if (mask.empty())
-        bitwise_run(src1, src2, dst, kernelName, &arithm_bitwise_xor);
+        bitwise_run(src1, src2, dst, kernelName, &arithm_bitwise_binary, opt);
     else
-        bitwise_run(src1, src2, dst, mask, kernelName, &arithm_bitwise_xor_mask);
+        bitwise_run(src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_mask, opt);
 }
 
 
 void cv::ocl::bitwise_xor(const oclMat &src1, const Scalar &src2, oclMat &dst, const oclMat &mask)
 {
 
-    if(src1.clCxt -> impl -> double_support == 0 && src1.type() == CV_64F)
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE) && src1.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;
     }
-    string kernelName = mask.data ? "arithm_s_bitwise_xor_with_mask" : "arithm_s_bitwise_xor";
+    string kernelName = mask.data ? "arithm_s_bitwise_binary_with_mask" : "arithm_s_bitwise_binary";
+    static const char opt [] = "-D OP_BINARY=^";
     if (mask.data)
-        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_xor_scalar_mask);
+        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_scalar_mask, opt);
     else
-        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_xor_scalar);
+        bitwise_scalar( src1, src2, dst, mask, kernelName, &arithm_bitwise_binary_scalar, opt);
 }
 
 oclMat cv::ocl::operator ~ (const oclMat &src)
@@ -2036,7 +2072,7 @@ oclMatExpr::operator oclMat() const
 #define BLOCK_ROWS    (256/TILE_DIM)
 static void transpose_run(const oclMat &src, oclMat &dst, string kernelName)
 {
-    if(src.clCxt -> impl -> double_support == 0 && src.type() == CV_64F)
+    if(!src.clCxt->supportsFeature(Context::CL_DOUBLE) && src.type() == CV_64F)
     {
         CV_Error(CV_GpuNotSupported, "Selected device don't support double\r\n");
         return;
@@ -2135,7 +2171,7 @@ void cv::ocl::addWeighted(const oclMat &src1, double alpha, const oclMat &src2, 
     args.push_back( make_pair( sizeof(cl_int), (void *)&src2_step ));
     args.push_back( make_pair( sizeof(cl_int), (void *)&src2.offset));
 
-    if(src1.clCxt -> impl -> double_support != 0)
+    if(src1.clCxt->supportsFeature(Context::CL_DOUBLE))
     {
         args.push_back( make_pair( sizeof(cl_double), (void *)&alpha ));
         args.push_back( make_pair( sizeof(cl_double), (void *)&beta ));
@@ -2282,9 +2318,9 @@ static void arithmetic_pow_run(const oclMat &src1, double p, oclMat &dst, string
     args.push_back( make_pair( sizeof(cl_int), (void *)&dst.rows ));
     args.push_back( make_pair( sizeof(cl_int), (void *)&cols ));
     args.push_back( make_pair( sizeof(cl_int), (void *)&dst_step1 ));
-    if(src1.clCxt -> impl -> double_support == 0)
+    float pf = p;
+    if(!src1.clCxt->supportsFeature(Context::CL_DOUBLE))
     {
-        float pf = p;
         args.push_back( make_pair( sizeof(cl_float), (void *)&pf ));
     }
     else
@@ -2294,7 +2330,7 @@ static void arithmetic_pow_run(const oclMat &src1, double p, oclMat &dst, string
 }
 void cv::ocl::pow(const oclMat &x, double p, oclMat &y)
 {
-    if(x.clCxt -> impl -> double_support == 0 && x.type() == CV_64F)
+    if(!x.clCxt->supportsFeature(Context::CL_DOUBLE) && x.type() == CV_64F)
     {
         cout << "Selected device do not support double" << endl;
         return;

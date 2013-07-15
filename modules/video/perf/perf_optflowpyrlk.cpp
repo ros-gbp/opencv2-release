@@ -165,7 +165,8 @@ PERF_TEST_P(Path_Idx_Cn_NPoints_WSize_Deriv, OpticalFlowPyrLK_self, testing::Com
     declare.in(pyramid1, pyramid2, inPoints).out(outPoints);
     declare.time(400);
 
-    TEST_CYCLE()
+    int runs = 3;
+    TEST_CYCLE_MULTIRUN(runs)
     {
         calcOpticalFlowPyrLK(pyramid1, pyramid2, inPoints, outPoints, status, err,
                              Size(winSize, winSize), maxLevel, criteria,
@@ -185,7 +186,7 @@ PERF_TEST_P(Path_Win_Deriv_Border_Reuse, OpticalFlowPyrLK_pyr, testing::Combine(
                 testing::Values<std::string>("cv/optflow/frames/720p_01.png"),
                 testing::Values(7, 11),
                 testing::Bool(),
-                testing::ValuesIn(PyrBorderMode::all()),
+                PyrBorderMode::all(),
                 testing::Bool()
                 )
             )
