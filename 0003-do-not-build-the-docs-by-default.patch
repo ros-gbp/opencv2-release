@@ -1,14 +1,14 @@
-From e2816f078142fa29cd759b71cceffce09a192df2 Mon Sep 17 00:00:00 2001
+From d718d466f7710e83d8dc9d875410b177d9995d24 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sun, 19 May 2013 13:54:35 +0000
 Subject: [PATCH 3/3] do not build the docs by default
 
 ---
- doc/CMakeLists.txt | 4 ++--
+ doc/CMakeLists.txt |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
-index f9a49c9..0f2695f 100644
+index 2719667..70f4809 100644
 --- a/doc/CMakeLists.txt
 +++ b/doc/CMakeLists.txt
 @@ -68,7 +68,7 @@ if(BUILD_DOCS AND HAVE_SPHINX)
@@ -28,5 +28,5 @@ index f9a49c9..0f2695f 100644
 +endif()
 \ No newline at end of file
 -- 
-1.8.1.2
+1.7.9.5
 

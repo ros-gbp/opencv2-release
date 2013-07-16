@@ -1,13 +1,13 @@
-From 0ef4a3f1b5b4fb0b259bd88714b40bba8cf0acb0 Mon Sep 17 00:00:00 2001
+From 15f461e882c0cc67417645a9d1e580a0eede10c0 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 13 Mar 2013 10:58:59 -0700
 Subject: [PATCH 2/3] add misc patches from Groovy
 
 ---
- cmake/OpenCVGenPkgconfig.cmake         | 2 ++
- cmake/templates/OpenCVConfig.cmake.in  | 1 -
- cmake/templates/opencv-XXX.pc.cmake.in | 3 ++-
- doc/CMakeLists.txt                     | 4 ++--
+ cmake/OpenCVGenPkgconfig.cmake         |    2 ++
+ cmake/templates/OpenCVConfig.cmake.in  |    1 -
+ cmake/templates/opencv-XXX.pc.cmake.in |    3 ++-
+ doc/CMakeLists.txt                     |    4 ++--
  4 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/cmake/OpenCVGenPkgconfig.cmake b/cmake/OpenCVGenPkgconfig.cmake
@@ -49,7 +49,7 @@ index 4f6415c..af0dad3 100644
  Cflags: -I${includedir_old} -I${includedir_new}
 +
 diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
-index 0f2695f..f9a49c9 100644
+index 70f4809..2719667 100644
 --- a/doc/CMakeLists.txt
 +++ b/doc/CMakeLists.txt
 @@ -68,7 +68,7 @@ if(BUILD_DOCS AND HAVE_SPHINX)
@@ -69,5 +69,5 @@ index 0f2695f..f9a49c9 100644
 \ No newline at end of file
 +endif()
 -- 
-1.8.1.2
+1.7.9.5
 
