@@ -1,10 +1,10 @@
-From b8e72c01d0330d0b2502e7f76702b86b954c9f43 Mon Sep 17 00:00:00 2001
+From fa84d7ec964fbad76772e56905ca39847ce1d039 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vincent.rabaud@gmail.com>
 Date: Tue, 16 Jul 2013 11:03:06 +0000
 Subject: [PATCH 2/2] install to hydro ........
 
 ---
- debian/rules.em |    6 +++---
+ debian/rules.em | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/debian/rules.em b/debian/rules.em
@@ -26,5 +26,5 @@ index 339bbe1..37957ce 100644
  		$(CMAKE_FLAGS)
  
 -- 
-1.7.9.5
+1.8.3.4 (Apple Git-47)
 
