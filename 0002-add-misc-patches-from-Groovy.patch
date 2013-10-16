@@ -1,13 +1,13 @@
-From 15f461e882c0cc67417645a9d1e580a0eede10c0 Mon Sep 17 00:00:00 2001
+From 7bd54da87b43f9fc7d52647b85ec421f5f685aee Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 13 Mar 2013 10:58:59 -0700
-Subject: [PATCH 2/3] add misc patches from Groovy
+Subject: [PATCH 2/6] add misc patches from Groovy
 
 ---
- cmake/OpenCVGenPkgconfig.cmake         |    2 ++
- cmake/templates/OpenCVConfig.cmake.in  |    1 -
- cmake/templates/opencv-XXX.pc.cmake.in |    3 ++-
- doc/CMakeLists.txt                     |    4 ++--
+ cmake/OpenCVGenPkgconfig.cmake         | 2 ++
+ cmake/templates/OpenCVConfig.cmake.in  | 1 -
+ cmake/templates/opencv-XXX.pc.cmake.in | 3 ++-
+ doc/CMakeLists.txt                     | 4 ++--
  4 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/cmake/OpenCVGenPkgconfig.cmake b/cmake/OpenCVGenPkgconfig.cmake
@@ -69,5 +69,5 @@ index 70f4809..2719667 100644
 \ No newline at end of file
 +endif()
 -- 
-1.7.9.5
+1.8.3.4 (Apple Git-47)
 
