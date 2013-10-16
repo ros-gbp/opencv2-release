@@ -30,12 +30,12 @@ tracks:
       -i :{release_inc}
     devel_branch: '2.4'
     last_version: 2.4.6
-    name: upstream
+    name: opencv2
     patches: hydro
     release_inc: '1'
     release_repo_url: null
-    release_tag: :{ask}
+    release_tag: 2.4.6.1
     ros_distro: hydro
     vcs_type: git
-    vcs_uri: /home/vrabaud/software/opencv
+    vcs_uri: https://github.com/Itseez/opencv.git
     version: :{ask}
