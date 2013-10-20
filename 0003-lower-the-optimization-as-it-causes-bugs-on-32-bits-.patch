@@ -1,0 +1,26 @@
+From 662c9063aecdeb152c0d97e326ab35b9e4e41e26 Mon Sep 17 00:00:00 2001
+From: Vincent Rabaud <vrabaud@willowgarage.com>
+Date: Sun, 20 Oct 2013 23:16:50 +0200
+Subject: [PATCH 3/3] lower the optimization as it causes bugs on 32 bits (SSE
+ still here)
+
+---
+ debian/rules.em | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/debian/rules.em b/debian/rules.em
+index 37957ce..aa5931b 100644
+--- a/debian/rules.em
++++ b/debian/rules.em
+@@ -17,7 +17,7 @@ export LDFLAGS=
+ export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
+ 
+ CMAKE_FLAGS = \
+-        -DCMAKE_BUILD_TYPE=Release \
++        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+         -DENABLE_SSE=ON \
+         -DENABLE_SSE2=ON \
+         -DENABLE_SSE3=ON \
+-- 
+1.8.1.2
+
