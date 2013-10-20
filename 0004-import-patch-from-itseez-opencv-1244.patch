@@ -1,4 +1,4 @@
-From 444603a4bb6a5920966551beffd9644856f02fd2 Mon Sep 17 00:00:00 2001
+From 10c4ca2fa80685049f4a980f7e1ff58e091ed358 Mon Sep 17 00:00:00 2001
 From: William Woodall <william@osrfoundation.org>
 Date: Tue, 15 Oct 2013 17:58:42 -0700
 Subject: [PATCH 4/6] import patch from itseez/opencv#1244
@@ -31,5 +31,5 @@ index 1e68cd4..fa88dad 100644
      ::perf::TestBase::Init(std::vector<std::string>(impls, impls + sizeof impls / sizeof *impls),\
                             argc, argv);\
 -- 
-1.8.3.4 (Apple Git-47)
+1.8.1.2
 

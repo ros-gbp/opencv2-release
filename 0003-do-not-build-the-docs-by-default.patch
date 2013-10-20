@@ -1,4 +1,4 @@
-From a5de3310330a7bfe6fb4830b1286ba4e04f5c074 Mon Sep 17 00:00:00 2001
+From ff9ed032aae94a7faf337007420a0587bda38f3e Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sun, 19 May 2013 13:54:35 +0000
 Subject: [PATCH 3/6] do not build the docs by default
@@ -28,5 +28,5 @@ index 2719667..70f4809 100644
 +endif()
 \ No newline at end of file
 -- 
-1.8.3.4 (Apple Git-47)
+1.8.1.2
 

@@ -1,4 +1,4 @@
-From 817d89ef41685230bde37b228c016bea6ef84890 Mon Sep 17 00:00:00 2001
+From f525b3bd73a70d2b1c3651f7376edf92b521e4e8 Mon Sep 17 00:00:00 2001
 From: William Woodall <william@osrfoundation.org>
 Date: Tue, 15 Oct 2013 18:29:13 -0700
 Subject: [PATCH 5/6] Turn off performance tests, tests, and docs for from
@@ -28,5 +28,5 @@ index b663763..7b32dd2 100644
  OCV_OPTION(BUILD_WITH_STATIC_CRT    "Enables use of staticaly linked CRT for staticaly linked OpenCV" ON IF MSVC )
  OCV_OPTION(BUILD_FAT_JAVA_LIB       "Create fat java wrapper containing the whole OpenCV library" ON IF NOT BUILD_SHARED_LIBS AND CMAKE_COMPILER_IS_GNUCXX )
 -- 
-1.8.3.4 (Apple Git-47)
+1.8.1.2
 
