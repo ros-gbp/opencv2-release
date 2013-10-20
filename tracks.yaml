@@ -37,5 +37,5 @@ tracks:
     release_tag: 2.4.6.1
     ros_distro: hydro
     vcs_type: git
-    vcs_uri: https://github.com/Itseez/opencv.git
+    vcs_uri: /home/vrabaud/software/opencv
     version: :{ask}
