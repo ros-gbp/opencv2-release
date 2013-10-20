@@ -1,4 +1,4 @@
-From 0f8092447abddfd93eefe84bb23d4b597fde32a2 Mon Sep 17 00:00:00 2001
+From 093c181c594a088270ab7826f52c36d3dafba4dd Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sun, 19 May 2013 13:53:56 +0000
 Subject: [PATCH 2/2] do not build the docs by default
@@ -8,7 +8,7 @@ Subject: [PATCH 2/2] do not build the docs by default
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
-index f9a49c9..0f2695f 100644
+index 2719667..70f4809 100644
 --- a/doc/CMakeLists.txt
 +++ b/doc/CMakeLists.txt
 @@ -68,7 +68,7 @@ if(BUILD_DOCS AND HAVE_SPHINX)

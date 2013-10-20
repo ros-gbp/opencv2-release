@@ -1,4 +1,4 @@
-From f6c943bbae0a5d420bf2378b23e8d2ba53ba355f Mon Sep 17 00:00:00 2001
+From 35fc1c39e8917461b05eda8b40583449e47c1321 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 27 Feb 2013 10:54:11 -0800
 Subject: [PATCH 1/2] Squashed previous commits and dropped package.xml
@@ -25,10 +25,10 @@ install opencv2.pc
  5 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index f7e9489..685631e 100644
+index f464b22..b663763 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -866,3 +866,5 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+@@ -886,3 +886,5 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
    message(WARNING "The source directory is the same as binary directory. \"make clean\" may damage the source tree")
  endif()
  
@@ -73,7 +73,7 @@ index 4f6415c..af0dad3 100644
  Cflags: -I${includedir_old} -I${includedir_new}
 +
 diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
-index 0f2695f..f9a49c9 100644
+index 70f4809..2719667 100644
 --- a/doc/CMakeLists.txt
 +++ b/doc/CMakeLists.txt
 @@ -68,7 +68,7 @@ if(BUILD_DOCS AND HAVE_SPHINX)
