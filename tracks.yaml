@@ -34,7 +34,7 @@ tracks:
     patches: hydro
     release_inc: '3'
     release_repo_url: null
-    release_tag: 2.4.6.1
+    release_tag: :{ask}
     ros_distro: hydro
     vcs_type: git
     vcs_uri: /home/vrabaud/software/opencv
