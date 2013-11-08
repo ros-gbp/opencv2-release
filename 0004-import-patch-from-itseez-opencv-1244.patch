@@ -1,7 +1,7 @@
-From 10c4ca2fa80685049f4a980f7e1ff58e091ed358 Mon Sep 17 00:00:00 2001
+From 3e0aaff1bb48e1ea491df875c2166160f82b24d2 Mon Sep 17 00:00:00 2001
 From: William Woodall <william@osrfoundation.org>
 Date: Tue, 15 Oct 2013 17:58:42 -0700
-Subject: [PATCH 4/6] import patch from itseez/opencv#1244
+Subject: [PATCH 4/7] import patch from itseez/opencv#1244
 
 ---
  modules/ts/include/opencv2/ts/ts_perf.hpp | 11 +++++++++--

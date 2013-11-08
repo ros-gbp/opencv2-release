@@ -1,7 +1,7 @@
-From f525b3bd73a70d2b1c3651f7376edf92b521e4e8 Mon Sep 17 00:00:00 2001
+From 870c516787cc05cc93fcb6e37e68509eb3b43e8d Mon Sep 17 00:00:00 2001
 From: William Woodall <william@osrfoundation.org>
 Date: Tue, 15 Oct 2013 18:29:13 -0700
-Subject: [PATCH 5/6] Turn off performance tests, tests, and docs for from
+Subject: [PATCH 5/7] Turn off performance tests, tests, and docs for from
  source people
 
 ---

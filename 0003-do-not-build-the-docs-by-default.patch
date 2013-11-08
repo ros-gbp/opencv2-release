@@ -1,7 +1,7 @@
-From ff9ed032aae94a7faf337007420a0587bda38f3e Mon Sep 17 00:00:00 2001
+From f22a4ef955b245045877a69162fa52a36f19d47c Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sun, 19 May 2013 13:54:35 +0000
-Subject: [PATCH 3/6] do not build the docs by default
+Subject: [PATCH 3/7] do not build the docs by default
 
 ---
  doc/CMakeLists.txt | 4 ++--

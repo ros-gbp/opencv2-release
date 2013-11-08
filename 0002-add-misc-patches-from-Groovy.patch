@@ -1,7 +1,7 @@
-From c106dbe0309d67ecaa1db86f63ae411b33c3015d Mon Sep 17 00:00:00 2001
+From 2b58bc73e8477a1183cf54ec465969170234bf43 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Wed, 13 Mar 2013 10:58:59 -0700
-Subject: [PATCH 2/6] add misc patches from Groovy
+Subject: [PATCH 2/7] add misc patches from Groovy
 
 ---
  cmake/OpenCVGenPkgconfig.cmake         | 2 ++

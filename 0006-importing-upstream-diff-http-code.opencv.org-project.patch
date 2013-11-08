@@ -1,7 +1,7 @@
-From 03e33d21f72f1f96a337d5f6f5eb5d07fc0f252f Mon Sep 17 00:00:00 2001
+From 91da0e538bbfd75ee9aed8e82df7a429f2200010 Mon Sep 17 00:00:00 2001
 From: William Woodall <william@osrfoundation.org>
 Date: Tue, 15 Oct 2013 18:42:51 -0700
-Subject: [PATCH 6/6] importing upstream diff
+Subject: [PATCH 6/7] importing upstream diff
  http://code.opencv.org/projects/opencv/repository/revisions/e9b9a6fc038fc243e2debcc1dabd0d0745ff39d6/diff/modules/legacy/src/dpstereo.cpp
 
 ---
