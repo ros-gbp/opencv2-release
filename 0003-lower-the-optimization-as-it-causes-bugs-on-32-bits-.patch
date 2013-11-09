@@ -1,4 +1,4 @@
-From b27c731126c8385ee28c027d80c86837bb3026ce Mon Sep 17 00:00:00 2001
+From 5a175199cead67eea04121508935d68fec7b286c Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sun, 20 Oct 2013 23:16:50 +0200
 Subject: [PATCH 3/4] lower the optimization as it causes bugs on 32 bits (SSE

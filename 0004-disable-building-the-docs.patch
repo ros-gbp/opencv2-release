@@ -1,4 +1,4 @@
-From 46496a3faec760d3e2218832f3e143ce8c2b4ac5 Mon Sep 17 00:00:00 2001
+From 3180416bb3c8c8447ef179040544580a9ad2c6c1 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Thu, 7 Nov 2013 23:19:28 +0100
 Subject: [PATCH 4/4] disable building the docs
