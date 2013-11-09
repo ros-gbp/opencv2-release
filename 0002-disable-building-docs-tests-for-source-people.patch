@@ -1,7 +1,7 @@
 From b98f0c4d94a4363f14bd1a3143adb5906a2ebf63 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sat, 9 Nov 2013 13:36:35 +0100
-Subject: [PATCH 2/2] disable building docs/tests for source people
+Subject: [PATCH 2/3] disable building docs/tests for source people
 
 ---
  CMakeLists.txt | 6 +++---
