@@ -1,7 +1,7 @@
-From 662c9063aecdeb152c0d97e326ab35b9e4e41e26 Mon Sep 17 00:00:00 2001
+From b27c731126c8385ee28c027d80c86837bb3026ce Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vrabaud@willowgarage.com>
 Date: Sun, 20 Oct 2013 23:16:50 +0200
-Subject: [PATCH 3/3] lower the optimization as it causes bugs on 32 bits (SSE
+Subject: [PATCH 3/4] lower the optimization as it causes bugs on 32 bits (SSE
  still here)
 
 ---
@@ -9,7 +9,7 @@ Subject: [PATCH 3/3] lower the optimization as it causes bugs on 32 bits (SSE
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/debian/rules.em b/debian/rules.em
-index 37957ce..aa5931b 100644
+index 37957ce..aa5931b 100755
 --- a/debian/rules.em
 +++ b/debian/rules.em
 @@ -17,7 +17,7 @@ export LDFLAGS=
