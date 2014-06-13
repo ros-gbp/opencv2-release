@@ -16,23 +16,6 @@ export DH_OPTIONS=-v --buildsystem=cmake
 export LDFLAGS=
 export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 
-
-CMAKE_FLAGS = \
-	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
-	-DENABLE_SSE=ON \
-	-DENABLE_SSE2=ON \
-	-DENABLE_SSE3=ON \
-	-DENABLE_SSE42=OFF \
-	-DENABLE_SSE41=OFF \
-	-DENABLE_FAST_MATH=OFF \
-	-DBUILD_EXAMPLES=OFF \
-	-DBUILD_DOCS=OFF \
-	-DBUILD_PERF_TESTS=OFF \
-	-DBUILD_TESTS=OFF \
-	-DBUILD_NEW_PYTHON_SUPPORT=ON \
-	-DWITH_V4L=ON \
-	-DWITH_CUDA=OFF
-
 %:
 	dh  $@@
 
@@ -40,12 +23,11 @@ override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
-	if [ -f "/opt/ros/hydro/setup.sh" ]; then . "/opt/ros/hydro/setup.sh"; fi && \
-	dh_auto_configure -Scmake -- \
-		-DCMAKE_INSTALL_PREFIX="/opt/ros/hydro" \
-		-DCMAKE_PREFIX_PATH="/opt/ros/hydro" \
- 		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
-		$(CMAKE_FLAGS)
+	if [ -f "@(InstallationPrefix)/setup.sh" ]; then . "@(InstallationPrefix)/setup.sh"; fi && \
+	dh_auto_configure -- \
+		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
+		-DCMAKE_INSTALL_PREFIX="@(InstallationPrefix)" \
+		-DCMAKE_PREFIX_PATH="@(InstallationPrefix)"
 
 override_dh_auto_build:
 	# In case we're installing to a non-standard location, look for a setup.sh
