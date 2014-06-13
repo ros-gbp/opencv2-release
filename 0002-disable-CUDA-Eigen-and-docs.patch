@@ -1,4 +1,4 @@
-From ad89491b3fcc2ef235a57f4746d82469a0d6b328 Mon Sep 17 00:00:00 2001
+From 752cb553b5a77ee4ff4fa6c38deb5fc72ff1289b Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vincent.rabaud@gmail.com>
 Date: Fri, 13 Jun 2014 18:34:12 +0200
 Subject: [PATCH 2/3] disable CUDA, Eigen and docs
