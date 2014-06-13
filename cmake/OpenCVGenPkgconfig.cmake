@@ -76,7 +76,6 @@ if(INSTALL_TO_MANGLED_PATHS)
 else()
   set(OPENCV_PC_FILE_NAME opencv.pc)
 endif()
-set(OPENCV_PC_FILE_NAME opencv2.pc)
 configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/opencv-XXX.pc.in"
                "${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME}"
                @ONLY)
