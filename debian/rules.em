@@ -17,7 +17,7 @@ export LDFLAGS=
 export PKG_CONFIG_PATH=@(InstallationPrefix)/lib/pkgconfig
 
 CMAKE_FLAGS = \
-        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DCMAKE_BUILD_TYPE=Release \
         -DENABLE_SSE=ON \
         -DENABLE_SSE2=ON \
         -DENABLE_SSE3=ON \
