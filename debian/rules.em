@@ -39,10 +39,10 @@ override_dh_auto_configure:
 	# In case we're installing to a non-standard location, look for a setup.sh
 	# in the install tree that was dropped by catkin, and source it.  It will
 	# set things like CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
-	if [ -f "/opt/ros/hydro/setup.sh" ]; then . "/opt/ros/hydro/setup.sh"; fi && \
+	if [ -f "/opt/ros/groovy/setup.sh" ]; then . "/opt/ros/groovy/setup.sh"; fi && \
 	dh_auto_configure -Scmake -- \
-		-DCMAKE_INSTALL_PREFIX="/opt/ros/hydro" \
-		-DCMAKE_PREFIX_PATH="/opt/ros/hydro" \
+		-DCMAKE_INSTALL_PREFIX="/opt/ros/groovy" \
+		-DCMAKE_PREFIX_PATH="/opt/ros/groovy" \
 		-DCATKIN_BUILD_BINARY_PACKAGE="1" \
 		$(CMAKE_FLAGS)
 
