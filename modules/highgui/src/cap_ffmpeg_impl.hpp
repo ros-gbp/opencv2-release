@@ -343,9 +343,9 @@ void CvCapture_FFMPEG::close()
 class ImplMutex
 {
 public:
-	ImplMutex() { init(); }
-	~ImplMutex() { destroy(); }
-	
+    ImplMutex() { init(); }
+    ~ImplMutex() { destroy(); }
+
     void init();
     void destroy();
 
@@ -366,7 +366,15 @@ private:
 
 struct ImplMutex::Impl
 {
-    void init() { InitializeCriticalSection(&cs); refcount = 1; }
+    void init()
+    {
+#if (_WIN32_WINNT >= 0x0600)
+        ::InitializeCriticalSectionEx(&cs, 1000, 0);
+#else
+        ::InitializeCriticalSection(&cs);
+#endif
+        refcount = 1;
+    }
     void destroy() { DeleteCriticalSection(&cs); }
 
     void lock() { EnterCriticalSection(&cs); }
@@ -439,14 +447,14 @@ struct ImplMutex::Impl
 
 void ImplMutex::init()
 {
-	impl = (Impl*)malloc(sizeof(Impl));
-	impl->init();
+    impl = (Impl*)malloc(sizeof(Impl));
+    impl->init();
 }
-void ImplMutex::destroy() 
+void ImplMutex::destroy()
 {
-	impl->destroy();
-	free(impl);
-	impl = NULL;
+    impl->destroy();
+    free(impl);
+    impl = NULL;
 }
 void ImplMutex::lock() { impl->lock(); }
 void ImplMutex::unlock() { impl->unlock(); }
@@ -538,7 +546,7 @@ bool CvCapture_FFMPEG::open( const char* _filename )
         goto exit_func;
     }
     err =
-#if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 3, 0)
+#if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 6, 0)
     avformat_find_stream_info(ic, NULL);
 #else
     av_find_stream_info(ic);
@@ -1362,8 +1370,6 @@ bool CvVideoWriter_FFMPEG::writeFrame( const unsigned char* data, int step, int 
 /// close video output stream and free associated memory
 void CvVideoWriter_FFMPEG::close()
 {
-    unsigned i;
-
     // nothing to do if already released
     if ( !picture )
         return;
@@ -1419,13 +1425,6 @@ void CvVideoWriter_FFMPEG::close()
 
     av_free(outbuf);
 
-    /* free the streams */
-    for(i = 0; i < oc->nb_streams; i++)
-    {
-        av_freep(&oc->streams[i]->codec);
-        av_freep(&oc->streams[i]);
-    }
-
     if (!(fmt->flags & AVFMT_NOFILE))
     {
         /* close the output file */
@@ -1443,7 +1442,7 @@ void CvVideoWriter_FFMPEG::close()
     }
 
     /* free the stream */
-    av_free(oc);
+    avformat_free_context(oc);
 
     if( temp_image.data )
     {
@@ -2067,7 +2066,7 @@ enum
     VideoCodec_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),   // Y,V,U (4:2:0)
     VideoCodec_NV12   = (('N'<<24)|('V'<<16)|('1'<<8)|('2')),   // Y,UV  (4:2:0)
     VideoCodec_YUYV   = (('Y'<<24)|('U'<<16)|('Y'<<8)|('V')),   // YUYV/YUY2 (4:2:2)
-    VideoCodec_UYVY   = (('U'<<24)|('Y'<<16)|('V'<<8)|('Y')),   // UYVY (4:2:2)
+    VideoCodec_UYVY   = (('U'<<24)|('Y'<<16)|('V'<<8)|('Y'))    // UYVY (4:2:2)
 };
 
 enum
@@ -2075,7 +2074,7 @@ enum
     VideoChromaFormat_Monochrome = 0,
     VideoChromaFormat_YUV420,
     VideoChromaFormat_YUV422,
-    VideoChromaFormat_YUV444,
+    VideoChromaFormat_YUV444
 };
 
 struct InputMediaStream_FFMPEG
@@ -2115,7 +2114,7 @@ bool InputMediaStream_FFMPEG::open(const char* fileName, int* codec, int* chroma
     if (err < 0)
         return false;
 
-    #if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 3, 0)
+    #if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 6, 0)
         err = avformat_find_stream_info(ctx_, 0);
     #else
         err = av_find_stream_info(ctx_);

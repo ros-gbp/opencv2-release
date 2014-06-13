@@ -41,6 +41,51 @@
 
 #include "precomp.hpp"
 
+/*
+#if defined (HAVE_IPP) && (IPP_VERSION_MAJOR >= 7)
+#define USE_IPP_CANNY 1
+#else
+#undef USE_IPP_CANNY
+#endif
+*/
+#ifdef USE_IPP_CANNY
+namespace cv
+{
+static bool ippCanny(const Mat& _src, Mat& _dst, float low,  float high)
+{
+    int size = 0, size1 = 0;
+    IppiSize roi = { _src.cols, _src.rows };
+
+    ippiFilterSobelNegVertGetBufferSize_8u16s_C1R(roi, ippMskSize3x3, &size);
+    ippiFilterSobelHorizGetBufferSize_8u16s_C1R(roi, ippMskSize3x3, &size1);
+    size = std::max(size, size1);
+    ippiCannyGetSize(roi, &size1);
+    size = std::max(size, size1);
+
+    AutoBuffer<uchar> buf(size + 64);
+    uchar* buffer = alignPtr((uchar*)buf, 32);
+
+    Mat _dx(_src.rows, _src.cols, CV_16S);
+    if( ippiFilterSobelNegVertBorder_8u16s_C1R(_src.data, (int)_src.step,
+                    _dx.ptr<short>(), (int)_dx.step, roi,
+                    ippMskSize3x3, ippBorderRepl, 0, buffer) < 0 )
+        return false;
+
+    Mat _dy(_src.rows, _src.cols, CV_16S);
+    if( ippiFilterSobelHorizBorder_8u16s_C1R(_src.data, (int)_src.step,
+                    _dy.ptr<short>(), (int)_dy.step, roi,
+                    ippMskSize3x3, ippBorderRepl, 0, buffer) < 0 )
+        return false;
+
+    if( ippiCanny_16s8u_C1R(_dx.ptr<short>(), (int)_dx.step,
+                            _dy.ptr<short>(), (int)_dy.step,
+                            _dst.data, (int)_dst.step, roi, low, high, buffer) < 0 )
+        return false;
+    return true;
+}
+}
+#endif
+
 void cv::Canny( InputArray _src, OutputArray _dst,
                 double low_thresh, double high_thresh,
                 int aperture_size, bool L2gradient )
@@ -61,20 +106,26 @@ void cv::Canny( InputArray _src, OutputArray _dst,
     if ((aperture_size & 1) == 0 || (aperture_size != -1 && (aperture_size < 3 || aperture_size > 7)))
         CV_Error(CV_StsBadFlag, "");
 
+    if (low_thresh > high_thresh)
+        std::swap(low_thresh, high_thresh);
+
 #ifdef HAVE_TEGRA_OPTIMIZATION
     if (tegra::canny(src, dst, low_thresh, high_thresh, aperture_size, L2gradient))
         return;
 #endif
 
+#ifdef USE_IPP_CANNY
+    if( aperture_size == 3 && !L2gradient &&
+        ippCanny(src, dst, (float)low_thresh, (float)high_thresh) )
+        return;
+#endif
+
     const int cn = src.channels();
-    cv::Mat dx(src.rows, src.cols, CV_16SC(cn));
-    cv::Mat dy(src.rows, src.cols, CV_16SC(cn));
+    Mat dx(src.rows, src.cols, CV_16SC(cn));
+    Mat dy(src.rows, src.cols, CV_16SC(cn));
 
-    cv::Sobel(src, dx, CV_16S, 1, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
-    cv::Sobel(src, dy, CV_16S, 0, 1, aperture_size, 1, 0, cv::BORDER_REPLICATE);
-
-    if (low_thresh > high_thresh)
-        std::swap(low_thresh, high_thresh);
+    Sobel(src, dx, CV_16S, 1, 0, aperture_size, 1, 0, cv::BORDER_REPLICATE);
+    Sobel(src, dy, CV_16S, 0, 1, aperture_size, 1, 0, cv::BORDER_REPLICATE);
 
     if (L2gradient)
     {
@@ -88,7 +139,7 @@ void cv::Canny( InputArray _src, OutputArray _dst,
     int high = cvFloor(high_thresh);
 
     ptrdiff_t mapstep = src.cols + 2;
-    cv::AutoBuffer<uchar> buffer((src.cols+2)*(src.rows+2) + cn * mapstep * 3 * sizeof(int));
+    AutoBuffer<uchar> buffer((src.cols+2)*(src.rows+2) + cn * mapstep * 3 * sizeof(int));
 
     int* mag_buf[3];
     mag_buf[0] = (int*)(uchar*)buffer;
@@ -120,7 +171,7 @@ void cv::Canny( InputArray _src, OutputArray _dst,
     #define CANNY_PUSH(d)    *(d) = uchar(2), *stack_top++ = (d)
     #define CANNY_POP(d)     (d) = *--stack_top
 
-    // calculate magnitude and angle of gradient, perform non-maxima supression.
+    // calculate magnitude and angle of gradient, perform non-maxima suppression.
     // fill the map with one of the following values:
     //   0 - the pixel might belong to an edge
     //   1 - the pixel can not belong to an edge

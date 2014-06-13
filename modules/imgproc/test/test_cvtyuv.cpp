@@ -349,7 +349,7 @@ public:
         int r = rgb[0];
         int g = rgb[1];
         int b = rgb[2];
-        
+
         uchar y = saturate_cast<uchar>((int)( 0.257f*r + 0.504f*g + 0.098f*b + 0.5f) + 16);
         uchar u = saturate_cast<uchar>((int)(-0.148f*r - 0.291f*g + 0.439f*b + 0.5f) + 128);
         uchar v = saturate_cast<uchar>((int)( 0.439f*r - 0.368f*g - 0.071f*b + 0.5f) + 128);
@@ -603,7 +603,7 @@ CV_ENUM(YUVCVTS, CV_YUV2RGB_NV12, CV_YUV2BGR_NV12, CV_YUV2RGB_NV21, CV_YUV2BGR_N
                  CV_YUV2RGBA_YUY2, CV_YUV2BGRA_YUY2, CV_YUV2RGBA_YVYU, CV_YUV2BGRA_YVYU,
                  CV_YUV2GRAY_420, CV_YUV2GRAY_UYVY, CV_YUV2GRAY_YUY2,
                  CV_YUV2BGR, CV_YUV2RGB, CV_RGB2YUV_YV12, CV_BGR2YUV_YV12, CV_RGBA2YUV_YV12,
-                 CV_BGRA2YUV_YV12, CV_RGB2YUV_I420, CV_BGR2YUV_I420, CV_RGBA2YUV_I420, CV_BGRA2YUV_I420);
+                 CV_BGRA2YUV_YV12, CV_RGB2YUV_I420, CV_BGR2YUV_I420, CV_RGBA2YUV_I420, CV_BGRA2YUV_I420)
 
 typedef ::testing::TestWithParam<YUVCVTS> Imgproc_ColorYUV;
 

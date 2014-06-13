@@ -16,7 +16,7 @@ USAGE
   --feature  - Feature to use. Can be sift, surf of orb. Append '-flann' to feature name
                 to use Flann-based matcher instead bruteforce.
 
-  Press left mouse button on a feature point to see its mathcing point.
+  Press left mouse button on a feature point to see its matching point.
 '''
 
 import numpy as np
@@ -142,4 +142,3 @@ if __name__ == '__main__':
     match_and_draw('affine find_obj')
     cv2.waitKey()
     cv2.destroyAllWindows()
-

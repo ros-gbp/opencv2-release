@@ -335,7 +335,7 @@ icvCreateHidHaarClassifierCascade( CvHaarClassifierCascade* cascade )
             out->isStumpBased &= node_count == 1;
         }
     }
-
+/*
 #ifdef HAVE_IPP
     int can_use_ipp = !out->has_tilted_features && !out->is_tree && out->isStumpBased;
 
@@ -391,7 +391,7 @@ icvCreateHidHaarClassifierCascade( CvHaarClassifierCascade* cascade )
         }
     }
 #endif
-
+*/
     cascade->hid_cascade = out;
     assert( (char*)haar_node_ptr - (char*)out <= datasize );
 
@@ -1964,10 +1964,10 @@ cvLoadHaarClassifierCascade( const char* directory, CvSize orig_window_size )
 
     size += (n+1)*sizeof(char*);
     const char** input_cascade = (const char**)cvAlloc( size );
-    
+
     if( !input_cascade )
       CV_Error( CV_StsNoMem, "Could not allocate memory for input_cascade" );
-      
+
     char* ptr = (char*)(input_cascade + n + 1);
 
     for( int i = 0; i < n; i++ )
@@ -1988,7 +1988,7 @@ cvLoadHaarClassifierCascade( const char* directory, CvSize orig_window_size )
     }
 
     input_cascade[n] = 0;
-    
+
     CvHaarClassifierCascade* cascade = icvLoadCascadeCART( input_cascade, n, orig_window_size );
 
     if( input_cascade )
