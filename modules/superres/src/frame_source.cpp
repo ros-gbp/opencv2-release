@@ -119,10 +119,22 @@ namespace
         {
             vc_ >> _frame.getMatRef();
         }
-        else
+        else if(_frame.kind() == _InputArray::GPU_MAT)
         {
             vc_ >> frame_;
             arrCopy(frame_, _frame);
+        }
+        else if(_frame.kind() == _InputArray::OCL_MAT)
+        {
+            vc_ >> frame_;
+            if(!frame_.empty())
+            {
+                arrCopy(frame_, _frame);
+            }
+        }
+        else
+        {
+            //should never get here
         }
     }
 
@@ -188,7 +200,7 @@ Ptr<FrameSource> cv::superres::createFrameSource_Camera(int deviceId)
 //////////////////////////////////////////////////////
 // VideoFrameSource_GPU
 
-#ifndef HAVE_OPENCV_GPU
+#if !defined(HAVE_OPENCV_GPU) || defined(DYNAMIC_CUDA_SUPPORT)
 
 Ptr<FrameSource> cv::superres::createFrameSource_Video_GPU(const string& fileName)
 {

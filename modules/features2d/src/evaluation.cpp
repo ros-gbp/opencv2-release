@@ -128,7 +128,7 @@ public:
 
     Point2f center;
     Scalar ellipse; // 3 elements a, b, c: ax^2+2bxy+cy^2=1
-    Size_<float> axes; // half lenght of elipse axes
+    Size_<float> axes; // half length of ellipse axes
     Size_<float> boundingBox; // half sizes of bounding box which sides are parallel to the coordinate axes
 };
 
@@ -258,7 +258,7 @@ struct IntersectAreaCounter
     {
         CV_Assert( miny < maxy );
         CV_Assert( dr > FLT_EPSILON );
-        
+
         int temp_bua = bua, temp_bna = bna;
         for( int i = range.begin(); i != range.end(); i++ )
         {

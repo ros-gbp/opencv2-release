@@ -52,8 +52,8 @@ def build_opencv(srcroot, buildroot, target, arch):
         if os.path.isfile(wlib):
             os.remove(wlib)
 
-    os.system("xcodebuild -parallelizeTargets ARCHS=%s -jobs 8 -sdk %s -configuration Release -target ALL_BUILD" % (arch, target.lower()))
-    os.system("xcodebuild ARCHS=%s -sdk %s -configuration Release -target install install" % (arch, target.lower()))
+    os.system("xcodebuild IPHONEOS_DEPLOYMENT_TARGET=6.0 -parallelizeTargets ARCHS=%s -jobs 8 -sdk %s -configuration Release -target ALL_BUILD" % (arch, target.lower()))
+    os.system("xcodebuild IPHONEOS_DEPLOYMENT_TARGET=6.0 ARCHS=%s -sdk %s -configuration Release -target install install" % (arch, target.lower()))
     os.chdir(currdir)
 
 def put_framework_together(srcroot, dstroot):
@@ -71,19 +71,11 @@ def put_framework_together(srcroot, dstroot):
     os.makedirs(framework_dir)
     os.chdir(framework_dir)
 
-    # determine OpenCV version (without subminor part)
-    tdir0 = "../build/" + targetlist[0]
-    cfg = open(tdir0 + "/cvconfig.h", "rt")
-    for l in cfg.readlines():
-        if l.startswith("#define  VERSION"):
-            opencv_version = l[l.find("\"")+1:l.rfind(".")]
-            break
-    cfg.close()
-
     # form the directory tree
     dstdir = "Versions/A"
     os.makedirs(dstdir + "/Resources")
 
+    tdir0 = "../build/" + targetlist[0]
     # copy headers
     shutil.copytree(tdir0 + "/install/include/opencv2", dstdir + "/Headers")
 
@@ -91,13 +83,8 @@ def put_framework_together(srcroot, dstroot):
     wlist = " ".join(["../build/" + t + "/lib/Release/libopencv_world.a" for t in targetlist])
     os.system("lipo -create " + wlist + " -o " + dstdir + "/opencv2")
 
-    # form Info.plist
-    srcfile = open(srcroot + "/platforms/ios/Info.plist.in", "rt")
-    dstfile = open(dstdir + "/Resources/Info.plist", "wt")
-    for l in srcfile.readlines():
-        dstfile.write(l.replace("${VERSION}", opencv_version))
-    srcfile.close()
-    dstfile.close()
+    # copy Info.plist
+    shutil.copyfile(tdir0 + "/ios/Info.plist", dstdir + "/Resources/Info.plist")
 
     # make symbolic links
     os.symlink("A", "Versions/Current")
@@ -109,8 +96,8 @@ def put_framework_together(srcroot, dstroot):
 def build_framework(srcroot, dstroot):
     "main function to do all the work"
 
-    targets = ["iPhoneOS", "iPhoneOS", "iPhoneSimulator"]
-    archs = ["armv7", "armv7s", "i386"]
+    targets = ["iPhoneOS", "iPhoneOS", "iPhoneOS", "iPhoneSimulator", "iPhoneSimulator"]
+    archs = ["armv7", "armv7s", "arm64", "i386", "x86_64"]
     for i in range(len(targets)):
         build_opencv(srcroot, os.path.join(dstroot, "build"), targets[i], archs[i])
 

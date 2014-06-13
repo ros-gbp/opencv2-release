@@ -205,7 +205,7 @@ double CvVSModule::GetParam(const char* name)
         if(p->pInt) return p->pInt[0];
     }
     return 0;
-};
+}
 
 const char* CvVSModule::GetParamStr(const char* name)
 {
@@ -637,4 +637,3 @@ void cvReleaseBlobTracker(CvBlobTracker**ppT )
     ppT[0]->Release();
     ppT[0] = 0;
 }
-

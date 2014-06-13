@@ -89,9 +89,9 @@ Code
 ======
 
 .. |TutorialHoughLinesSimpleDownload| replace:: here
-.. _TutorialHoughLinesSimpleDownload: http://code.opencv.org/projects/opencv/repository/revisions/master/raw/samples/cpp/houghlines.cpp
+.. _TutorialHoughLinesSimpleDownload: https://github.com/Itseez/opencv/tree/master/samples/cpp/houghlines.cpp
 .. |TutorialHoughLinesFancyDownload| replace:: here
-.. _TutorialHoughLinesFancyDownload: http://code.opencv.org/projects/opencv/repository/revisions/master/raw/samples/cpp/tutorial_code/ImgTrans/HoughLines_Demo.cpp
+.. _TutorialHoughLinesFancyDownload: https://github.com/Itseez/opencv/tree/master/samples/cpp/tutorial_code/ImgTrans/HoughLines_Demo.cpp
 
 
 #. **What does this program do?**
@@ -290,4 +290,3 @@ We get the following result by using the Probabilistic Hough Line Transform:
    :align: center
 
 You may observe that the number of lines detected vary while you change the *threshold*. The explanation is sort of evident: If you establish a higher threshold, fewer lines will be detected (since you will need more points to declare a line detected).
-

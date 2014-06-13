@@ -9,7 +9,10 @@ represented as vectors in a multidimensional space. All objects that implement t
 descriptor extractors inherit the
 :ocv:class:`DescriptorExtractor` interface.
 
+.. note::
 
+   * An example explaining keypoint extraction can be found at opencv_source_code/samples/cpp/descriptor_extractor_matcher.cpp
+   * An example on descriptor evaluation can be found at opencv_source_code/samples/cpp/detector_descriptor_evaluation.cpp
 
 DescriptorExtractor
 -------------------
@@ -63,7 +66,7 @@ Computes the descriptors for a set of keypoints detected in an image (first vari
 
     :param keypoints: Input collection of keypoints. Keypoints for which a descriptor cannot be computed are removed. Sometimes new keypoints can be added, for example: ``SIFT`` duplicates keypoint with several dominant orientations (for each orientation).
 
-    :param descriptors: Computed descriptors. In the second variant of the method ``descriptors[i]`` are descriptors computed for a ``keypoints[i]`. Row ``j`` is the ``keypoints`` (or ``keypoints[i]``) is the descriptor for keypoint ``j``-th keypoint.
+    :param descriptors: Computed descriptors. In the second variant of the method ``descriptors[i]`` are descriptors computed for a ``keypoints[i]``. Row ``j`` is the ``keypoints`` (or ``keypoints[i]``) is the descriptor for keypoint ``j``-th keypoint.
 
 
 DescriptorExtractor::create
@@ -78,9 +81,10 @@ The current implementation supports the following types of a descriptor extracto
 
  * ``"SIFT"`` -- :ocv:class:`SIFT`
  * ``"SURF"`` -- :ocv:class:`SURF`
- * ``"ORB"`` -- :ocv:class:`ORB`
- * ``"BRISK"`` -- :ocv:class:`BRISK`
  * ``"BRIEF"`` -- :ocv:class:`BriefDescriptorExtractor`
+ * ``"BRISK"`` -- :ocv:class:`BRISK`
+ * ``"ORB"`` -- :ocv:class:`ORB`
+ * ``"FREAK"`` -- :ocv:class:`FREAK`
 
 A combined format is also supported: descriptor extractor adapter name ( ``"Opponent"`` --
 :ocv:class:`OpponentColorDescriptorExtractor` ) + descriptor extractor name (see above),
@@ -137,4 +141,6 @@ Strecha C., Fua P. *BRIEF: Binary Robust Independent Elementary Features* ,
         ...
     };
 
+.. note::
 
+   * A complete BRIEF extractor sample can be found at opencv_source_code/samples/cpp/brief_match_test.cpp

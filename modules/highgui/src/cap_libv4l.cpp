@@ -14,7 +14,7 @@ It has been tested with the motempl sample program
 First Patch:  August 24, 2004 Travis Wood   TravisOCV@tkwood.com
 For Release:  OpenCV-Linux Beta4  opencv-0.9.6
 Tested On:    LMLBT44 with 8 video inputs
-Problems?     Post your questions at answers.opencv.org, 
+Problems?     Post your questions at answers.opencv.org,
               Report bugs at code.opencv.org,
               Submit your fixes at https://github.com/Itseez/opencv/
 Patched Comments:
@@ -321,7 +321,6 @@ typedef struct CvCaptureCAM_V4L
    struct v4l2_control control;
    enum v4l2_buf_type type;
    struct v4l2_queryctrl queryctrl;
-   struct v4l2_querymenu querymenu;
 
    /* V4L2 control variables */
    v4l2_ctrl_range** v4l2_ctrl_ranges;
@@ -491,25 +490,6 @@ static int try_init_v4l2(CvCaptureCAM_V4L* capture, char *deviceName)
 }
 
 
-static void v4l2_scan_controls_enumerate_menu(CvCaptureCAM_V4L* capture)
-{
-//  printf (" Menu items:\n");
-  CLEAR (capture->querymenu);
-  capture->querymenu.id = capture->queryctrl.id;
-  for (capture->querymenu.index = capture->queryctrl.minimum;
-       (int)capture->querymenu.index <= capture->queryctrl.maximum;
-       capture->querymenu.index++)
-  {
-    if (0 == xioctl (capture->deviceHandle, VIDIOC_QUERYMENU,
-                     &capture->querymenu))
-    {
-      //printf (" %s\n", capture->querymenu.name);
-    } else {
-        perror ("VIDIOC_QUERYMENU");
-    }
-  }
-}
-
 static void v4l2_free_ranges(CvCaptureCAM_V4L* capture) {
   int i;
   if (capture->v4l2_ctrl_ranges != NULL) {
@@ -590,9 +570,6 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture) {
       if(capture->queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
         continue;
       }
-      if (capture->queryctrl.type == V4L2_CTRL_TYPE_MENU) {
-        v4l2_scan_controls_enumerate_menu(capture);
-      }
       if(capture->queryctrl.type != V4L2_CTRL_TYPE_INTEGER &&
          capture->queryctrl.type != V4L2_CTRL_TYPE_BOOLEAN &&
          capture->queryctrl.type != V4L2_CTRL_TYPE_MENU) {
@@ -612,9 +589,6 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture) {
       if(v4l2_ioctl(capture->deviceHandle, VIDIOC_QUERYCTRL, &capture->queryctrl) == 0) {
         if(capture->queryctrl.flags & V4L2_CTRL_FLAG_DISABLED) {
           continue;
-        }
-        if (capture->queryctrl.type == V4L2_CTRL_TYPE_MENU) {
-          v4l2_scan_controls_enumerate_menu(capture);
         }
         if(capture->queryctrl.type != V4L2_CTRL_TYPE_INTEGER &&
            capture->queryctrl.type != V4L2_CTRL_TYPE_BOOLEAN &&
@@ -637,9 +611,6 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture) {
           continue;
         }
 
-        if (capture->queryctrl.type == V4L2_CTRL_TYPE_MENU) {
-          v4l2_scan_controls_enumerate_menu(capture);
-        }
 
         if(capture->queryctrl.type != V4L2_CTRL_TYPE_INTEGER &&
            capture->queryctrl.type != V4L2_CTRL_TYPE_BOOLEAN &&
@@ -856,8 +827,7 @@ static int _capture_V4L (CvCaptureCAM_V4L *capture, char *deviceName)
 
    detect_v4l = try_init_v4l(capture, deviceName);
 
-   if ((detect_v4l == -1)
-       )
+   if (detect_v4l == -1)
    {
      fprintf (stderr, "HIGHGUI ERROR: V4L"
               ": device %s: Unable to open for READ ONLY\n", deviceName);
@@ -865,8 +835,7 @@ static int _capture_V4L (CvCaptureCAM_V4L *capture, char *deviceName)
      return -1;
    }
 
-   if ((detect_v4l <= 0)
-       )
+   if (detect_v4l <= 0)
    {
      fprintf (stderr, "HIGHGUI ERROR: V4L"
               ": device %s: Unable to query number of channels\n", deviceName);

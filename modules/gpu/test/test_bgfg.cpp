@@ -49,6 +49,7 @@ using namespace cvtest;
 #if defined(HAVE_XINE)         || \
     defined(HAVE_GSTREAMER)    || \
     defined(HAVE_QUICKTIME)    || \
+    defined(HAVE_QTKIT)        || \
     defined(HAVE_AVFOUNDATION) || \
     defined(HAVE_FFMPEG)       || \
     defined(WIN32) /* assume that we have ffmpeg */
@@ -335,7 +336,7 @@ GPU_TEST_P(MOG2, getBackgroundImage)
     cv::Mat background_gold;
     mog2_gold.getBackgroundImage(background_gold);
 
-    ASSERT_MAT_NEAR(background_gold, background, 0);
+    ASSERT_MAT_NEAR(background_gold, background, 1);
 }
 
 INSTANTIATE_TEST_CASE_P(GPU_Video, MOG2, testing::Combine(

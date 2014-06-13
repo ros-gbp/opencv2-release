@@ -26,7 +26,7 @@
 //
 //   * Redistribution's in binary form must reproduce the above copyright notice,
 //     this list of conditions and the following disclaimer in the documentation
-//     and/or other oclMaterials provided with the distribution.
+//     and/or other materials provided with the distribution.
 //
 //   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
@@ -43,51 +43,68 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#include "precomp.hpp"
+#include "perf_precomp.hpp"
+
+using namespace perf;
+using std::tr1::tuple;
+using std::tr1::get;
+using std::tr1::make_tuple;
 
 ///////////// cvtColor////////////////////////
-PERFTEST(cvtColor)
+
+CV_ENUM(ConversionTypes, COLOR_RGB2GRAY, COLOR_RGB2BGR, COLOR_RGB2YUV, COLOR_YUV2RGB, COLOR_RGB2YCrCb,
+        COLOR_YCrCb2RGB, COLOR_RGB2XYZ, COLOR_XYZ2RGB, COLOR_RGB2HSV, COLOR_HSV2RGB, COLOR_RGB2HLS,
+        COLOR_HLS2RGB, COLOR_BGR5652BGR, COLOR_BGR2BGR565, COLOR_RGBA2mRGBA, COLOR_mRGBA2RGBA, COLOR_YUV2RGB_NV12)
+
+typedef tuple<Size, tuple<ConversionTypes, int, int> > CvtColorParams;
+typedef TestBaseWithParam<CvtColorParams> CvtColorFixture;
+
+OCL_PERF_TEST_P(CvtColorFixture, CvtColor, testing::Combine(
+                OCL_TEST_SIZES,
+                testing::Values(
+                    make_tuple(ConversionTypes(COLOR_RGB2GRAY), 3, 1),
+                    make_tuple(ConversionTypes(COLOR_RGB2BGR), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_RGB2YUV), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_YUV2RGB), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_RGB2YCrCb), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_YCrCb2RGB), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_RGB2XYZ), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_XYZ2RGB), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_RGB2HSV), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_HSV2RGB), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_RGB2HLS), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_HLS2RGB), 3, 3),
+                    make_tuple(ConversionTypes(COLOR_BGR5652BGR), 2, 3),
+                    make_tuple(ConversionTypes(COLOR_BGR2BGR565), 3, 2),
+                    make_tuple(ConversionTypes(COLOR_RGBA2mRGBA), 4, 4),
+                    make_tuple(ConversionTypes(COLOR_mRGBA2RGBA), 4, 4),
+                    make_tuple(ConversionTypes(COLOR_YUV2RGB_NV12), 1, 3)
+                    )))
 {
-    Mat src, dst, ocl_dst;
-    ocl::oclMat d_src, d_dst;
+    CvtColorParams params = GetParam();
+    const Size srcSize = get<0>(params);
+    const tuple<int, int, int> conversionParams = get<1>(params);
+    const int code = get<0>(conversionParams), scn = get<1>(conversionParams),
+            dcn = get<2>(conversionParams);
 
-    int all_type[] = {CV_8UC4};
-    std::string type_name[] = {"CV_8UC4"};
+    Mat src(srcSize, CV_8UC(scn)), dst(srcSize, CV_8UC(scn));
+    declare.in(src, WARMUP_RNG).out(dst);
 
-    for (int size = Min_Size; size <= Max_Size; size *= Multiple)
+    if (RUN_OCL_IMPL)
     {
-        for (size_t j = 0; j < sizeof(all_type) / sizeof(int); j++)
-        {
-            gen(src, size, size, all_type[j], 0, 256);
-            SUBTEST << size << "x" << size << "; " << type_name[j] << " ; CV_RGBA2GRAY";
+        ocl::oclMat oclSrc(src), oclDst(src.size(), dst.type());
 
-            cvtColor(src, dst, CV_RGBA2GRAY, 4);
+        OCL_TEST_CYCLE() ocl::cvtColor(oclSrc, oclDst, code, dcn);
+        oclDst.download(dst);
 
-            CPU_ON;
-            cvtColor(src, dst, CV_RGBA2GRAY, 4);
-            CPU_OFF;
-
-            d_src.upload(src);
-
-            WARMUP_ON;
-            ocl::cvtColor(d_src, d_dst, CV_RGBA2GRAY, 4);
-            WARMUP_OFF;
-
-            GPU_ON;
-            ocl::cvtColor(d_src, d_dst, CV_RGBA2GRAY, 4);
-            GPU_OFF;
-
-            GPU_FULL_ON;
-            d_src.upload(src);
-            ocl::cvtColor(d_src, d_dst, CV_RGBA2GRAY, 4);
-            d_dst.download(ocl_dst);
-            GPU_FULL_OFF;
-
-            TestSystem::instance().ExceptedMatSimilar(dst, ocl_dst, 1e-5);
-        }
-
-
+        SANITY_CHECK(dst, 1);
     }
+    else if (RUN_PLAIN_IMPL)
+    {
+        TEST_CYCLE() cv::cvtColor(src, dst, code, dcn);
 
-
+        SANITY_CHECK(dst);
+    }
+    else
+        OCL_PERF_ELSE
 }

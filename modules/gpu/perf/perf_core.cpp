@@ -1303,6 +1303,8 @@ PERF_TEST_P(Sz_3Depth, Core_AddWeighted,
 //////////////////////////////////////////////////////////////////////
 // GEMM
 
+#ifdef HAVE_CUBLAS
+
 CV_FLAGS(GemmFlags, 0, GEMM_1_T, GEMM_2_T, GEMM_3_T)
 #define ALL_GEMM_FLAGS Values(0, CV_GEMM_A_T, CV_GEMM_B_T, CV_GEMM_C_T, CV_GEMM_A_T | CV_GEMM_B_T, CV_GEMM_A_T | CV_GEMM_C_T, CV_GEMM_A_T | CV_GEMM_B_T | CV_GEMM_C_T)
 
@@ -1337,7 +1339,7 @@ PERF_TEST_P(Sz_Type_Flags, Core_GEMM,
 
         TEST_CYCLE() cv::gpu::gemm(d_src1, d_src2, 1.0, d_src3, 1.0, dst, flags);
 
-        GPU_SANITY_CHECK(dst, 1e-6);
+        GPU_SANITY_CHECK(dst, 1e-6, ERROR_RELATIVE);
     }
     else
     {
@@ -1350,6 +1352,8 @@ PERF_TEST_P(Sz_Type_Flags, Core_GEMM,
         CPU_SANITY_CHECK(dst);
     }
 }
+
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // Transpose

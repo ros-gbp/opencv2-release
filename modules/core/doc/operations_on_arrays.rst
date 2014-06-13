@@ -532,7 +532,7 @@ Performs the per-element comparison of two arrays or an array and scalar value.
 
     :param value: scalar value.
 
-    :param dst: output array that has the same size as the input arrays and type= ``CV_8UC1`` .
+    :param dst: output array that has the same size and type as the input arrays.
 
     :param cmpop: a flag, that specifies correspondence between the arrays:
 
@@ -929,7 +929,7 @@ So, the function chooses an operation mode depending on the flags and size of th
 
     * When ``DFT_COMPLEX_OUTPUT`` is set, the output is a complex matrix of the same size as input.
 
-    * When ``DFT_COMPLEX_OUTPUT`` is not set, the output is a real matrix of the same size as input. In case of 2D transform, it uses the packed format as shown above. In case of a single 1D transform, it looks like the first row of the matrix above. In case of multiple 1D transforms (when using the ``DCT_ROWS``         flag), each row of the output matrix looks like the first row of the matrix above.
+    * When ``DFT_COMPLEX_OUTPUT`` is not set, the output is a real matrix of the same size as input. In case of 2D transform, it uses the packed format as shown above. In case of a single 1D transform, it looks like the first row of the matrix above. In case of multiple 1D transforms (when using the ``DFT_ROWS``         flag), each row of the output matrix looks like the first row of the matrix above.
 
  * If the input array is complex and either ``DFT_INVERSE``     or ``DFT_REAL_OUTPUT``     are not set, the output is a complex array of the same size as input. The function performs a forward or inverse 1D or 2D transform of the whole input array or each row of the input array independently, depending on the flags ``DFT_INVERSE`` and ``DFT_ROWS``.
 
@@ -997,6 +997,12 @@ All of the above improvements have been implemented in :ocv:func:`matchTemplate`
 
 .. seealso:: :ocv:func:`dct` , :ocv:func:`getOptimalDFTSize` , :ocv:func:`mulSpectrums`, :ocv:func:`filter2D` , :ocv:func:`matchTemplate` , :ocv:func:`flip` , :ocv:func:`cartToPolar` , :ocv:func:`magnitude` , :ocv:func:`phase`
 
+.. note::
+
+   * An example using the discrete fourier transform can be found at opencv_source_code/samples/cpp/dft.cpp
+
+   * (Python) An example using the dft functionality to perform Wiener deconvolution can be found at opencv_source/samples/python2/deconvolution.py
+   * (Python) An example rearranging the quadrants of a Fourier image can be found at opencv_source/samples/python2/dft.py
 
 
 divide
@@ -2262,7 +2268,9 @@ The sample below is the function that takes two matrices. The first function sto
     :ocv:func:`dft`,
     :ocv:func:`dct`
 
+.. note::
 
+   * An example using PCA for dimensionality reduction while maintaining an amount of variance can be found at opencv_source_code/samples/cpp/pca.cpp
 
 PCA::PCA
 --------

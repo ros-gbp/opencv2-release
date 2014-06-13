@@ -46,9 +46,7 @@
 #include <vector>
 #include <limits>
 
-#ifdef HAVE_CVCONFIG_H
   #include "cvconfig.h"
-#endif
 
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/core/core.hpp"
@@ -58,11 +56,15 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/video/tracking.hpp"
 
-#ifdef HAVE_OPENCV_GPU
+#if defined(HAVE_OPENCV_GPU) && !defined(DYNAMIC_CUDA_SUPPORT)
     #include "opencv2/gpu/gpu.hpp"
     #ifdef HAVE_CUDA
         #include "opencv2/gpu/stream_accessor.hpp"
     #endif
+#endif
+
+#ifdef HAVE_OPENCV_OCL
+    #include "opencv2/ocl/private/util.hpp"
 #endif
 
 #ifdef HAVE_OPENCV_HIGHGUI

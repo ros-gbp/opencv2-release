@@ -13,7 +13,7 @@ int GetCpuID()
     map<string, string> cpu_info = GetCpuInfo();
     map<string, string>::const_iterator it;
 
-    #if defined(__i386__)
+#if defined(__i386__)
     LOGD("Using X86 HW detector");
     result |= ARCH_X86;
     it = cpu_info.find("flags");
@@ -91,6 +91,10 @@ int GetCpuID()
         {
             result |= FEATURES_HAS_NEON2;
         }
+        if (features.end() != features.find(CPU_INFO_VFPV4_STR))
+        {
+            result |= FEATURES_HAS_VFPv4;
+        }
         if (features.end() != features.find(CPU_INFO_VFPV3_STR))
         {
             if (features.end () != features.find(CPU_INFO_VFPV3D16_STR))
@@ -161,8 +165,11 @@ int GetProcessorCount()
 
 int DetectKnownPlatforms()
 {
+#if defined(__arm__) && defined(USE_TEGRA_HW_DETECTOR)
     int tegra_status = DetectTegra();
-
+#else
+    int tegra_status = NOT_TEGRA;
+#endif
     // All Tegra platforms since Tegra3
     if (2 < tegra_status)
     {

@@ -14,7 +14,7 @@ It has been tested with the motempl sample program
 First Patch:  August 24, 2004 Travis Wood   TravisOCV@tkwood.com
 For Release:  OpenCV-Linux Beta4  opencv-0.9.6
 Tested On:    LMLBT44 with 8 video inputs
-Problems?     Post your questions at answers.opencv.org, 
+Problems?     Post your questions at answers.opencv.org,
               Report bugs at code.opencv.org,
               Submit your fixes at https://github.com/Itseez/opencv/
 Patched Comments:
@@ -157,7 +157,7 @@ the symptoms were damaged image and 'Corrupt JPEG data: premature end of data se
   prevents bad images in the first place
 
 11th patch: April 2, 2013, Forrest Reiling forrest.reiling@gmail.com
-Added v4l2 support for getting capture property CV_CAP_PROP_POS_MSEC. 
+Added v4l2 support for getting capture property CV_CAP_PROP_POS_MSEC.
 Returns the millisecond timestamp of the last frame grabbed or 0 if no frames have been grabbed
 Used to successfully synchonize 2 Logitech C310 USB webcams to within 16 ms of one another
 
@@ -325,7 +325,6 @@ typedef struct CvCaptureCAM_V4L
    struct v4l2_control control;
    enum v4l2_buf_type type;
    struct v4l2_queryctrl queryctrl;
-   struct v4l2_querymenu querymenu;
 
    struct timeval timestamp;
 
@@ -641,24 +640,6 @@ static int autosetup_capture_mode_v4l(CvCaptureCAM_V4L* capture)
 
 #ifdef HAVE_CAMV4L2
 
-static void v4l2_scan_controls_enumerate_menu(CvCaptureCAM_V4L* capture)
-{
-//  printf (" Menu items:\n");
-  CLEAR (capture->querymenu);
-  capture->querymenu.id = capture->queryctrl.id;
-  for (capture->querymenu.index = capture->queryctrl.minimum;
-       (int)capture->querymenu.index <= capture->queryctrl.maximum;
-       capture->querymenu.index++)
-  {
-    if (0 == ioctl (capture->deviceHandle, VIDIOC_QUERYMENU,
-                     &capture->querymenu))
-    {
-//      printf (" %s\n", capture->querymenu.name);
-    } else {
-        perror ("VIDIOC_QUERYMENU");
-    }
-  }
-}
 
 static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
 {
@@ -723,8 +704,6 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
         capture->v4l2_exposure_max = capture->queryctrl.maximum;
       }
 
-      if (capture->queryctrl.type == V4L2_CTRL_TYPE_MENU)
-        v4l2_scan_controls_enumerate_menu(capture);
 
     } else {
 
@@ -792,9 +771,6 @@ static void v4l2_scan_controls(CvCaptureCAM_V4L* capture)
         capture->v4l2_exposure_min = capture->queryctrl.minimum;
         capture->v4l2_exposure_max = capture->queryctrl.maximum;
       }
-
-      if (capture->queryctrl.type == V4L2_CTRL_TYPE_MENU)
-        v4l2_scan_controls_enumerate_menu(capture);
 
     } else {
 
@@ -1233,8 +1209,8 @@ static int read_frame_v4l2(CvCaptureCAM_V4L* capture) {
    if (-1 == ioctl (capture->deviceHandle, VIDIOC_QBUF, &buf))
        perror ("VIDIOC_QBUF");
 
-   //set timestamp in capture struct to be timestamp of most recent frame 
-   capture->timestamp = buf.timestamp; 
+   //set timestamp in capture struct to be timestamp of most recent frame
+   capture->timestamp = buf.timestamp;
 
    return 1;
 }
@@ -2327,7 +2303,7 @@ static double icvGetPropertyCAM_V4L (CvCaptureCAM_V4L* capture,
           if (capture->FirstCapture) {
             return 0;
           } else {
-            return 1000 * capture->timestamp.tv_sec + ((double) capture->timestamp.tv_usec) / 1000; 
+            return 1000 * capture->timestamp.tv_sec + ((double) capture->timestamp.tv_usec) / 1000;
           }
           break;
       case CV_CAP_PROP_BRIGHTNESS:
