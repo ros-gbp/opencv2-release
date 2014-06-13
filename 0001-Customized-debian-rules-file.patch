@@ -1,4 +1,4 @@
-From fa05c2a6f6939b2ec74f478a23d6cdddf2ee2df2 Mon Sep 17 00:00:00 2001
+From 52043ef19bd12564c40d363fbea4f428dddb539c Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vincent.rabaud@gmail.com>
 Date: Fri, 13 Jun 2014 18:39:19 +0200
 Subject: [PATCH] Customized debian rules file
@@ -8,7 +8,7 @@ Subject: [PATCH] Customized debian rules file
  1 file changed, 23 insertions(+), 5 deletions(-)
 
 diff --git a/debian/rules.em b/debian/rules.em
-index d45dd5f..91f8bef 100755
+index 06777bd..a762980 100755
 --- a/debian/rules.em
 +++ b/debian/rules.em
 @@ -16,6 +16,23 @@ export DH_OPTIONS=-v --buildsystem=cmake
