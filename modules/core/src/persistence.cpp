@@ -415,13 +415,8 @@ cvCreateMap( int flags, int header_size, int elem_size,
     return map;
 }
 
-#ifdef __GNUC__
 #define CV_PARSE_ERROR( errmsg )                                    \
-    icvParseError( fs, __func__, (errmsg), __FILE__, __LINE__ )
-#else
-#define CV_PARSE_ERROR( errmsg )                                    \
-    icvParseError( fs, "", (errmsg), __FILE__, __LINE__ )
-#endif
+    icvParseError( fs, CV_Func, (errmsg), __FILE__, __LINE__ )
 
 static void
 icvParseError( CvFileStorage* fs, const char* func_name,
@@ -4860,7 +4855,7 @@ cvRegisterType( const CvTypeInfo* _info )
             "Type name should contain only letters, digits, - and _" );
     }
 
-    info = (CvTypeInfo*)malloc( sizeof(*info) + len + 1 );
+    info = (CvTypeInfo*)cvAlloc( sizeof(*info) + len + 1 );
 
     *info = *_info;
     info->type_name = (char*)(info + 1);
@@ -4898,7 +4893,7 @@ cvUnregisterType( const char* type_name )
         if( !CvType::first || !CvType::last )
             CvType::first = CvType::last = 0;
 
-        free( info );
+        cvFree( &info );
     }
 }
 
