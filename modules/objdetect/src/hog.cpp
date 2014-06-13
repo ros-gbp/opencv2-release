@@ -2619,8 +2619,10 @@ void HOGDescriptor::readALTModel(std::string modelfile)
        double *linearwt = new double[totwords+1];
        int length = totwords;
        nread = fread(linearwt, sizeof(double), totwords + 1, modelfl);
-       if(nread != static_cast<size_t>(length) + 1)
+       if(nread != static_cast<size_t>(length) + 1) {
+           delete [] linearwt;
            throw Exception();
+       }
 
        for(int i = 0; i < length; i++)
            detector.push_back((float)linearwt[i]);
@@ -2649,7 +2651,6 @@ void HOGDescriptor::groupRectangles(vector<cv::Rect>& rectList, vector<double>& 
     vector<cv::Rect_<double> > rrects(nclasses);
     vector<int> numInClass(nclasses, 0);
     vector<double> foundWeights(nclasses, DBL_MIN);
-    vector<double> totalFactorsPerClass(nclasses, 1);
     int i, j, nlabels = (int)labels.size();
 
     for( i = 0; i < nlabels; i++ )
