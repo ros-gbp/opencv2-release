@@ -1,7 +1,7 @@
-From ad89491b3fcc2ef235a57f4746d82469a0d6b328 Mon Sep 17 00:00:00 2001
+From 1abda0533b061e4eb4c7c05aed05313c36eea823 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vincent.rabaud@gmail.com>
 Date: Fri, 13 Jun 2014 18:34:12 +0200
-Subject: [PATCH 2/3] disable CUDA, Eigen and docs
+Subject: [PATCH 2/4] disable CUDA, Eigen and docs
 
 ---
  CMakeLists.txt | 6 +++---
