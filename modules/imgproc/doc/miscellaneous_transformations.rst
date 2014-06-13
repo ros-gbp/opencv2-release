@@ -113,6 +113,8 @@ But in case of a non-linear transformation, an input RGB image should be normali
 
 If you use ``cvtColor`` with 8-bit images, the conversion will have some information lost. For many applications, this will not be noticeable but it is recommended to use 32-bit images in applications that need the full range of colors or that convert an image before an operation and then convert back.
 
+If conversion adds the alpha channel, its value will set to the maximum of corresponding channel range: 255 for ``CV_8U``, 65535 for ``CV_16U``, 1 for ``CV_32F``.
+
 The function can do the following transformations:
 
 *
@@ -127,7 +129,7 @@ The function can do the following transformations:
 
     .. math::
 
-        \text{Gray to RGB[A]:} \quad R  \leftarrow Y, G  \leftarrow Y, B  \leftarrow Y, A  \leftarrow 0
+        \text{Gray to RGB[A]:} \quad R  \leftarrow Y, G  \leftarrow Y, B  \leftarrow Y, A  \leftarrow \max (ChannelRange)
 
     The conversion from a RGB image to gray is done with:
 
@@ -481,6 +483,12 @@ In this mode, the complexity is still linear.
 That is, the function provides a very fast way to compute the Voronoi diagram for a binary image.
 Currently, the second variant can use only the approximate distance transform algorithm, i.e. ``maskSize=CV_DIST_MASK_PRECISE`` is not supported yet.
 
+.. note::
+
+   * An example on using the distance transform can be found at opencv_source_code/samples/cpp/distrans.cpp
+
+   * (Python) An example on using the distance transform can be found at opencv_source/samples/python2/distrans.py
+
 floodFill
 ---------
 Fills a connected component with the given color.
@@ -580,11 +588,15 @@ where
 *
     Color/brightness of the seed point in case of a fixed range.
 
-Use these functions to either mark a connected component with the specified color in-place, or build a mask and then extract the contour, or copy the region to another image, and so on. Various modes of the function are demonstrated in the ``floodfill.cpp`` sample.
+Use these functions to either mark a connected component with the specified color in-place, or build a mask and then extract the contour, or copy the region to another image, and so on.
 
 .. seealso:: :ocv:func:`findContours`
 
+.. note::
 
+   * An example using the FloodFill technique can be found at opencv_source_code/samples/cpp/ffilldemo.cpp
+
+   * (Python) An example using the FloodFill technique can be found at opencv_source_code/samples/python2/floodfill.cpp
 
 integral
 --------
@@ -630,7 +642,7 @@ The functions calculate one or more integral images for the source image as foll
 
     \texttt{tilted} (X,Y) =  \sum _{y<Y,abs(x-X+1) \leq Y-y-1}  \texttt{image} (x,y)
 
-Using these integral images, you can calculate sa um, mean, and standard deviation over a specific up-right or rotated rectangular region of the image in a constant time, for example:
+Using these integral images, you can calculate sum, mean, and standard deviation over a specific up-right or rotated rectangular region of the image in a constant time, for example:
 
 .. math::
 
@@ -748,6 +760,12 @@ Visual demonstration and usage example of the function can be found in the OpenC
 
 .. seealso:: :ocv:func:`findContours`
 
+.. note::
+
+   * An example using the watershed algorithm can be found at opencv_source_code/samples/cpp/watershed.cpp
+
+   * (Python) An example using the watershed algorithm can be found at opencv_source_code/samples/python2/watershed.py
+
 grabCut
 -------
 Runs the GrabCut algorithm.
@@ -794,3 +812,9 @@ See the sample ``grabcut.cpp`` to learn how to use the function.
 .. [Meyer92] Meyer, F. *Color Image Segmentation*, ICIP92, 1992
 
 .. [Telea04] Alexandru Telea, *An Image Inpainting Technique Based on the Fast Marching Method*. Journal of Graphics, GPU, and Game Tools 9 1, pp 23-34 (2004)
+
+.. note::
+
+   * An example using the GrabCut algorithm can be found at opencv_source_code/samples/cpp/grabcut.cpp
+
+   * (Python) An example using the GrabCut algorithm can be found at opencv_source_code/samples/python2/grabcut.py

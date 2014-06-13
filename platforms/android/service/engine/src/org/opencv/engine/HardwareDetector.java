@@ -19,8 +19,9 @@ public class HardwareDetector
     // ARM specific features
     public static final int FEATURES_HAS_VFPv3d16 = 0x01;
     public static final int FEATURES_HAS_VFPv3    = 0x02;
-    public static final int FEATURES_HAS_NEON     = 0x04;
-    public static final int FEATURES_HAS_NEON2    = 0x08;
+    public static final int FEATURES_HAS_VFPv4    = 0x04;
+    public static final int FEATURES_HAS_NEON     = 0x08;
+    public static final int FEATURES_HAS_NEON2    = 0x16;
 
     // X86 specific features
     public static final int FEATURES_HAS_SSE  = 0x01;
@@ -30,11 +31,12 @@ public class HardwareDetector
     // GPU Acceleration options
     public static final int FEATURES_HAS_GPU = 0x010000;
 
-    public static final int PLATFORM_TEGRA  = 1;
-    public static final int PLATFORM_TEGRA2 = 2;
-    public static final int PLATFORM_TEGRA3 = 3;
-    public static final int PLATFORM_TEGRA4 = 4;
-
+    public static final int PLATFORM_TEGRA   = 1;
+    public static final int PLATFORM_TEGRA2  = 2;
+    public static final int PLATFORM_TEGRA3  = 3;
+    public static final int PLATFORM_TEGRA4i = 4;
+    public static final int PLATFORM_TEGRA4  = 5;
+    public static final int PLATFORM_TEGRA5  = 6;
 
     public static final int PLATFORM_UNKNOWN = 0;
 

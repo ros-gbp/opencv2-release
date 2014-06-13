@@ -26,7 +26,7 @@
 //
 //   * Redistribution's in binary form must reproduce the above copyright notice,
 //     this list of conditions and the following disclaimer in the documentation
-//     and/or other oclMaterials provided with the distribution.
+//     and/or other materials provided with the distribution.
 //
 //   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
@@ -43,101 +43,108 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#include "precomp.hpp"
+#include "perf_precomp.hpp"
+
+using namespace perf;
+using namespace std;
+using namespace cv;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 ///////////// Haar ////////////////////////
-namespace cv
+
+PERF_TEST(HaarFixture, Haar)
 {
-namespace ocl
-{
-
-struct getRect
-{
-    Rect operator()(const CvAvgComp &e) const
-    {
-        return e.rect;
-    }
-};
-
-class CascadeClassifier_GPU : public OclCascadeClassifier
-{
-public:
-    void detectMultiScale(oclMat &image,
-                          CV_OUT std::vector<cv::Rect>& faces,
-                          double scaleFactor = 1.1,
-                          int minNeighbors = 3, int flags = 0,
-                          Size minSize = Size(),
-                          Size maxSize = Size())
-    {
-        (void)maxSize;
-        MemStorage storage(cvCreateMemStorage(0));
-        //CvMat img=image;
-        CvSeq *objs = oclHaarDetectObjects(image, storage, scaleFactor, minNeighbors, flags, minSize);
-        vector<CvAvgComp> vecAvgComp;
-        Seq<CvAvgComp>(objs).copyTo(vecAvgComp);
-        faces.resize(vecAvgComp.size());
-        std::transform(vecAvgComp.begin(), vecAvgComp.end(), faces.begin(), getRect());
-    }
-
-};
-
-}
-}
-PERFTEST(Haar)
-{
-    Mat img = imread(abspath("basketball1.png"), CV_LOAD_IMAGE_GRAYSCALE);
-
-    if (img.empty())
-    {
-        throw runtime_error("can't open basketball1.png");
-    }
-
-    CascadeClassifier faceCascadeCPU;
-
-    if (!faceCascadeCPU.load(abspath("haarcascade_frontalface_alt.xml")))
-    {
-        throw runtime_error("can't load haarcascade_frontalface_alt.xml");
-    }
-
     vector<Rect> faces;
 
-    SUBTEST << img.cols << "x" << img.rows << "; scale image";
-    CPU_ON;
-    faceCascadeCPU.detectMultiScale(img, faces,
-                                    1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));
-    CPU_OFF;
+    Mat img = imread(getDataPath("gpu/haarcascade/basketball1.png"), CV_LOAD_IMAGE_GRAYSCALE);
+    ASSERT_TRUE(!img.empty()) << "can't open basketball1.png";
+    declare.in(img);
 
-
-    vector<Rect> oclfaces;
-    ocl::CascadeClassifier_GPU faceCascade;
-
-    if (!faceCascade.load(abspath("haarcascade_frontalface_alt.xml")))
+    if (RUN_PLAIN_IMPL)
     {
-        throw runtime_error("can't load haarcascade_frontalface_alt.xml");
+        CascadeClassifier faceCascade;
+        ASSERT_TRUE(faceCascade.load(getDataPath("gpu/haarcascade/haarcascade_frontalface_alt.xml")))
+                << "can't load haarcascade_frontalface_alt.xml";
+
+        TEST_CYCLE() faceCascade.detectMultiScale(img, faces,
+                                                     1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));
+
+        SANITY_CHECK(faces, 4 + 1e-4);
     }
+    else if (RUN_OCL_IMPL)
+    {
+        ocl::OclCascadeClassifier faceCascade;
+        ocl::oclMat oclImg(img);
 
-    ocl::oclMat d_img(img);
+        ASSERT_TRUE(faceCascade.load(getDataPath("gpu/haarcascade/haarcascade_frontalface_alt.xml")))
+                << "can't load haarcascade_frontalface_alt.xml";
 
-    WARMUP_ON;
-    faceCascade.detectMultiScale(d_img, oclfaces,
-                                 1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));
-    WARMUP_OFF;
+        OCL_TEST_CYCLE() faceCascade.detectMultiScale(oclImg, faces,
+                                     1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));
 
-    if(faces.size() == oclfaces.size())
-        TestSystem::instance().setAccurate(1, 0);
+        SANITY_CHECK(faces, 4 + 1e-4);
+    }
     else
-        TestSystem::instance().setAccurate(0, abs((int)faces.size() - (int)oclfaces.size()));
+        OCL_PERF_ELSE
+}
 
-    faces.clear();
+typedef std::tr1::tuple<std::string, std::string, int> Cascade_Image_MinSize_t;
+typedef perf::TestBaseWithParam<Cascade_Image_MinSize_t> Cascade_Image_MinSize;
 
-    GPU_ON;
-    faceCascade.detectMultiScale(d_img, oclfaces,
-                                 1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));
-    GPU_OFF;
+OCL_PERF_TEST_P(Cascade_Image_MinSize, CascadeClassifier,
+                testing::Combine(testing::Values( string("cv/cascadeandhog/cascades/haarcascade_frontalface_alt.xml"),
+                                                  string("cv/cascadeandhog/cascades/haarcascade_frontalface_alt2.xml") ),
+                                 testing::Values( string("cv/shared/lena.png"),
+                                                  string("cv/cascadeandhog/images/bttf301.png"),
+                                                  string("cv/cascadeandhog/images/class57.png") ),
+                                 testing::Values(30, 64, 90)))
+{
+    const string cascasePath = get<0>(GetParam());
+    const string imagePath   = get<1>(GetParam());
+    const int min_size = get<2>(GetParam());
+    Size minSize(min_size, min_size);
+    vector<Rect> faces;
 
-    GPU_FULL_ON;
-    d_img.upload(img);
-    faceCascade.detectMultiScale(d_img, oclfaces,
-                                 1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));
-    GPU_FULL_OFF;
+    Mat img = imread(getDataPath(imagePath), IMREAD_GRAYSCALE);
+    ASSERT_FALSE(img.empty()) << "Can't load source image: " << getDataPath(imagePath);
+    equalizeHist(img, img);
+    declare.in(img);
+
+    if (RUN_PLAIN_IMPL)
+    {
+        CascadeClassifier cc;
+        ASSERT_TRUE(cc.load(getDataPath(cascasePath))) << "Can't load cascade file: " << getDataPath(cascasePath);
+
+        while (next())
+        {
+            faces.clear();
+
+            startTimer();
+            cc.detectMultiScale(img, faces, 1.1, 3, CV_HAAR_SCALE_IMAGE, minSize);
+            stopTimer();
+        }
+    }
+    else if (RUN_OCL_IMPL)
+    {
+        ocl::oclMat uimg(img);
+        ocl::OclCascadeClassifier cc;
+        ASSERT_TRUE(cc.load(getDataPath(cascasePath))) << "Can't load cascade file: " << getDataPath(cascasePath);
+
+        while (next())
+        {
+            faces.clear();
+            ocl::finish();
+
+            startTimer();
+            cc.detectMultiScale(uimg, faces, 1.1, 3, CV_HAAR_SCALE_IMAGE, minSize);
+            stopTimer();
+        }
+    }
+    else
+        OCL_PERF_ELSE
+
+    //sort(faces.begin(), faces.end(), comparators::RectLess());
+    SANITY_CHECK_NOTHING();//(faces, min_size/5);
+    // using SANITY_CHECK_NOTHING() since OCL and PLAIN version may find different faces number
 }

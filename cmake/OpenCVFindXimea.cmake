@@ -19,11 +19,11 @@ set(XIMEA_LIBRARY_DIR)
 if(WIN32)
   # Try to find the XIMEA API path in registry.
   GET_FILENAME_COMPONENT(XIMEA_PATH "[HKEY_CURRENT_USER\\Software\\XIMEA\\CamSupport\\API;Path]" ABSOLUTE)
- 
+
   if(EXISTS ${XIMEA_PATH})
     set(XIMEA_FOUND 1)
     # set LIB folders
-    if(CMAKE_CL_64)
+    if(X86_64)
       set(XIMEA_LIBRARY_DIR "${XIMEA_PATH}/x64")
     else()
       set(XIMEA_LIBRARY_DIR "${XIMEA_PATH}/x86")

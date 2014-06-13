@@ -2392,16 +2392,14 @@ TYPED_TEST_P(Core_CheckRange, Negative)
     double min_bound = 4.5;
     double max_bound = 16.0;
 
-    TypeParam data[] = {5, 10, 15, 4, 10 ,2, 8, 12, 14};
+    TypeParam data[] = {5, 10, 15, 4, 10, 2, 8, 12, 14};
     cv::Mat src = cv::Mat(3,3, cv::DataDepth<TypeParam>::value, data);
 
-    cv::Point* bad_pt = new cv::Point(0, 0);
+    cv::Point bad_pt(0, 0);
 
-    ASSERT_FALSE(checkRange(src, true, bad_pt, min_bound, max_bound));
-    ASSERT_EQ(bad_pt->x,0);
-    ASSERT_EQ(bad_pt->y,1);
-
-    delete bad_pt;
+    ASSERT_FALSE(checkRange(src, true, &bad_pt, min_bound, max_bound));
+    ASSERT_EQ(bad_pt.x, 0);
+    ASSERT_EQ(bad_pt.y, 1);
 }
 
 TYPED_TEST_P(Core_CheckRange, Positive)
@@ -2409,16 +2407,14 @@ TYPED_TEST_P(Core_CheckRange, Positive)
     double min_bound = -1;
     double max_bound = 16.0;
 
-    TypeParam data[] = {5, 10, 15, 4, 10 ,2, 8, 12, 14};
+    TypeParam data[] = {5, 10, 15, 4, 10, 2, 8, 12, 14};
     cv::Mat src = cv::Mat(3,3, cv::DataDepth<TypeParam>::value, data);
 
-    cv::Point* bad_pt = new cv::Point(0, 0);
+    cv::Point bad_pt(0, 0);
 
-    ASSERT_TRUE(checkRange(src, true, bad_pt, min_bound, max_bound));
-    ASSERT_EQ(bad_pt->x,0);
-    ASSERT_EQ(bad_pt->y,0);
-
-    delete bad_pt;
+    ASSERT_TRUE(checkRange(src, true, &bad_pt, min_bound, max_bound));
+    ASSERT_EQ(bad_pt.x, 0);
+    ASSERT_EQ(bad_pt.y, 0);
 }
 
 TYPED_TEST_P(Core_CheckRange, Bounds)
@@ -2426,16 +2422,14 @@ TYPED_TEST_P(Core_CheckRange, Bounds)
     double min_bound = 24.5;
     double max_bound = 1.0;
 
-    TypeParam data[] = {5, 10, 15, 4, 10 ,2, 8, 12, 14};
+    TypeParam data[] = {5, 10, 15, 4, 10, 2, 8, 12, 14};
     cv::Mat src = cv::Mat(3,3, cv::DataDepth<TypeParam>::value, data);
 
-    cv::Point* bad_pt = new cv::Point(0, 0);
+    cv::Point bad_pt(0, 0);
 
-    ASSERT_FALSE(checkRange(src, true, bad_pt, min_bound, max_bound));
-    ASSERT_EQ(bad_pt->x,0);
-    ASSERT_EQ(bad_pt->y,0);
-
-    delete bad_pt;
+    ASSERT_FALSE(checkRange(src, true, &bad_pt, min_bound, max_bound));
+    ASSERT_EQ(bad_pt.x, 0);
+    ASSERT_EQ(bad_pt.y, 0);
 }
 
 TYPED_TEST_P(Core_CheckRange, Zero)
@@ -2457,7 +2451,7 @@ TEST(Core_Invert, small)
 {
     cv::Mat a = (cv::Mat_<float>(3,3) << 2.42104644730331, 1.81444796521479, -3.98072565304758, 0, 7.08389214348967e-3, 5.55326770986007e-3, 0,0, 7.44556154284261e-3);
     //cv::randu(a, -1, 1);
-    
+
     cv::Mat b = a.t()*a;
     cv::Mat c, i = Mat_<float>::eye(3, 3);
     cv::invert(b, c, cv::DECOMP_LU); //std::cout << b*c << std::endl;
@@ -2643,4 +2637,3 @@ TEST(CovariationMatrixVectorOfMatWithMean, accuracy)
 }
 
 /* End of file. */
-
