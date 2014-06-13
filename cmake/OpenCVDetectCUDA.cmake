@@ -90,12 +90,17 @@ if(CUDA_FOUND)
   endif()
 
   if(NOT DEFINED __cuda_arch_bin)
-    if(${CUDA_VERSION} VERSION_LESS "5.0")
-      set(__cuda_arch_bin "1.1 1.2 1.3 2.0 2.1(2.0) 3.0")
+    if(ANDROID)
+      set(__cuda_arch_bin "3.2")
+      set(__cuda_arch_ptx "")
     else()
-      set(__cuda_arch_bin "1.1 1.2 1.3 2.0 2.1(2.0) 3.0 3.5")
+      if(${CUDA_VERSION} VERSION_LESS "5.0")
+        set(__cuda_arch_bin "1.1 1.2 1.3 2.0 2.1(2.0) 3.0")
+      else()
+        set(__cuda_arch_bin "1.1 1.2 1.3 2.0 2.1(2.0) 3.0 3.5")
+      endif()
+      set(__cuda_arch_ptx "3.0")
     endif()
-    set(__cuda_arch_ptx "3.0")
   endif()
 
   set(CUDA_ARCH_BIN ${__cuda_arch_bin} CACHE STRING "Specify 'real' GPU architectures to build binaries for, BIN(PTX) format is supported")
@@ -147,6 +152,11 @@ if(CUDA_FOUND)
   set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} ${NVCC_FLAGS_EXTRA})
   set(OpenCV_CUDA_CC "${NVCC_FLAGS_EXTRA}")
 
+  if(ANDROID)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-Xptxas;-dlcm=ca")
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-target-os-variant=Android")
+  endif()
+
   message(STATUS "CUDA NVCC target flags: ${CUDA_NVCC_FLAGS}")
 
   OCV_OPTION(CUDA_FAST_MATH "Enable --use_fast_math for CUDA compiler " OFF)
@@ -169,6 +179,17 @@ if(CUDA_FOUND)
 
       # we remove -Wsign-promo as it generates warnings under linux
       string(REPLACE "-Wsign-promo" "" ${var} "${${var}}")
+
+      # we remove -Wno-sign-promo as it generates warnings under linux
+      string(REPLACE "-Wno-sign-promo" "" ${var} "${${var}}")
+
+      # we remove -Wno-delete-non-virtual-dtor because it's used for C++ compiler
+      # but NVCC uses C compiler by default
+      string(REPLACE "-Wno-delete-non-virtual-dtor" "" ${var} "${${var}}")
+
+      # we remove -frtti because it's used for C++ compiler
+      # but NVCC uses C compiler by default
+      string(REPLACE "-frtti" "" ${var} "${${var}}")
     endforeach()
 
     if(BUILD_SHARED_LIBS)
@@ -197,4 +218,43 @@ if(CUDA_FOUND)
 else()
   unset(CUDA_ARCH_BIN CACHE)
   unset(CUDA_ARCH_PTX CACHE)
+endif()
+
+if(HAVE_CUDA)
+  set(CUDA_LIBS_PATH "")
+  foreach(p ${CUDA_LIBRARIES} ${CUDA_npp_LIBRARY})
+    get_filename_component(_tmp ${p} PATH)
+    list(APPEND CUDA_LIBS_PATH ${_tmp})
+  endforeach()
+
+  if(HAVE_CUBLAS)
+    foreach(p ${CUDA_cublas_LIBRARY})
+      get_filename_component(_tmp ${p} PATH)
+      list(APPEND CUDA_LIBS_PATH ${_tmp})
+    endforeach()
+  endif()
+
+  if(HAVE_CUFFT)
+    foreach(p ${CUDA_cufft_LIBRARY})
+      get_filename_component(_tmp ${p} PATH)
+      list(APPEND CUDA_LIBS_PATH ${_tmp})
+    endforeach()
+  endif()
+
+  list(REMOVE_DUPLICATES CUDA_LIBS_PATH)
+  link_directories(${CUDA_LIBS_PATH})
+
+  set(CUDA_LIBRARIES_ABS ${CUDA_LIBRARIES})
+  ocv_convert_to_lib_name(CUDA_LIBRARIES ${CUDA_LIBRARIES})
+  set(CUDA_npp_LIBRARY_ABS ${CUDA_npp_LIBRARY})
+  ocv_convert_to_lib_name(CUDA_npp_LIBRARY ${CUDA_npp_LIBRARY})
+  if(HAVE_CUBLAS)
+    set(CUDA_cublas_LIBRARY_ABS ${CUDA_cublas_LIBRARY})
+    ocv_convert_to_lib_name(CUDA_cublas_LIBRARY ${CUDA_cublas_LIBRARY})
+  endif()
+
+  if(HAVE_CUFFT)
+    set(CUDA_cufft_LIBRARY_ABS ${CUDA_cufft_LIBRARY})
+    ocv_convert_to_lib_name(CUDA_cufft_LIBRARY ${CUDA_cufft_LIBRARY})
+  endif()
 endif()
