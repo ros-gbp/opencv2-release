@@ -1,4 +1,4 @@
-From db856e30fd4b825ecc103e655ff7c1f196d3c1cb Mon Sep 17 00:00:00 2001
+From 3263a274df3a157ef546f5e5772300481d086b83 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vincent.rabaud@gmail.com>
 Date: Fri, 13 Jun 2014 18:39:19 +0200
 Subject: [PATCH] Customized debian rules file
