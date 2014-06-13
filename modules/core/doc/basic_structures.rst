@@ -1350,12 +1350,12 @@ Copies the matrix to another one.
 
 The method copies the matrix data to another matrix. Before copying the data, the method invokes ::
 
-    m.create(this->size(), this->type);
+    m.create(this->size(), this->type());
 
 
 so that the destination matrix is reallocated if needed. While ``m.copyTo(m);`` works flawlessly, the function does not handle the case of a partial overlap between the source and the destination matrices.
 
-When the operation mask is specified, and the ``Mat::create`` call shown above reallocated the matrix, the newly allocated matrix is initialized with all zeros before copying the data.
+When the operation mask is specified, if the ``Mat::create`` call shown above reallocates the matrix, the newly allocated matrix is initialized with all zeros before copying the data.
 
 .. _Mat::convertTo:
 
@@ -1445,7 +1445,7 @@ Transposes a matrix.
 
 The method performs matrix transposition by means of matrix expressions. It does not perform the actual transposition but returns a temporary matrix transposition object that can be further used as a part of more complex matrix expressions or can be assigned to a matrix: ::
 
-    Mat A1 = A + Mat::eye(A.size(), A.type)*lambda;
+    Mat A1 = A + Mat::eye(A.size(), A.type())*lambda;
     Mat C = A1.t()*A1; // compute (A + lambda*I)^t * (A + lamda*I)
 
 
@@ -2890,5 +2890,5 @@ The above methods are usually enough for users. If you want to make your own alg
  * Make a class and specify ``Algorithm`` as its base class.
  * The algorithm parameters should be the class members. See ``Algorithm::get()`` for the list of possible types of the parameters.
  * Add public virtual method ``AlgorithmInfo* info() const;`` to your class.
- * Add constructor function, ``AlgorithmInfo`` instance and implement the ``info()`` method. The simplest way is to take  http://code.opencv.org/projects/opencv/repository/revisions/master/entry/modules/ml/src/ml_init.cpp as the reference and modify it according to the list of your parameters.
+ * Add constructor function, ``AlgorithmInfo`` instance and implement the ``info()`` method. The simplest way is to take https://github.com/Itseez/opencv/tree/master/modules/ml/src/ml_init.cpp as the reference and modify it according to the list of your parameters.
  * Add some public function (e.g. ``initModule_<mymodule>()``) that calls info() of your algorithm and put it into the same source file as ``info()`` implementation. This is to force C++ linker to include this object file into the target application. See ``Algorithm::create()`` for details.
