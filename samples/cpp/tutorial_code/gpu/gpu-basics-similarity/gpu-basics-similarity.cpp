@@ -69,7 +69,7 @@ int main(int, char *argv[])
     BufferPSNR bufferPSNR;
     BufferMSSIM bufferMSSIM;
 
-    int TIMES;
+    int TIMES = 10;
     stringstream sstr(argv[3]);
     sstr >> TIMES;
     double time, result = 0;
@@ -424,4 +424,3 @@ Scalar getMSSIM_GPU_optimized( const Mat& i1, const Mat& i2, BufferMSSIM& b)
     }
     return mssim;
 }
-

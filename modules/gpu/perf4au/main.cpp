@@ -42,9 +42,7 @@
 
 #include <cstdio>
 
-#ifdef HAVE_CVCONFIG_H
 #include "cvconfig.h"
-#endif
 
 #include "opencv2/ts/ts.hpp"
 #include "opencv2/ts/gpu_perf.hpp"
@@ -55,16 +53,12 @@
 #include "opencv2/video/video.hpp"
 #include "opencv2/legacy/legacy.hpp"
 
-int main(int argc, char* argv[])
-{
-    perf::printCudaInfo();
+static const char * impls[] = {
+    "cuda",
+    "plain"
+};
 
-    perf::Regression::Init("gpu_perf4au");
-    perf::TestBase::Init(argc, argv);
-    testing::InitGoogleTest(&argc, argv);
-
-    return RUN_ALL_TESTS();
-}
+CV_PERF_TEST_MAIN_WITH_IMPLS(gpu_perf4au, impls, perf::printCudaInfo())
 
 //////////////////////////////////////////////////////////
 // HoughLinesP
@@ -80,7 +74,7 @@ PERF_TEST_P(Image, HoughLinesP, testing::Values(std::string("im1_1280x800.jpg"))
     const float rho = 1.f;
     const float theta = 1.f;
     const int threshold = 40;
-    const int minLineLenght = 20;
+    const int minLineLength = 20;
     const int maxLineGap = 5;
 
     cv::Mat image = cv::imread(fileName, cv::IMREAD_GRAYSCALE);
@@ -91,11 +85,11 @@ PERF_TEST_P(Image, HoughLinesP, testing::Values(std::string("im1_1280x800.jpg"))
         cv::gpu::GpuMat d_lines;
         cv::gpu::HoughLinesBuf d_buf;
 
-        cv::gpu::HoughLinesP(d_image, d_lines, d_buf, rho, theta, minLineLenght, maxLineGap);
+        cv::gpu::HoughLinesP(d_image, d_lines, d_buf, rho, theta, minLineLength, maxLineGap);
 
         TEST_CYCLE()
         {
-            cv::gpu::HoughLinesP(d_image, d_lines, d_buf, rho, theta, minLineLenght, maxLineGap);
+            cv::gpu::HoughLinesP(d_image, d_lines, d_buf, rho, theta, minLineLength, maxLineGap);
         }
     }
     else
@@ -104,11 +98,11 @@ PERF_TEST_P(Image, HoughLinesP, testing::Values(std::string("im1_1280x800.jpg"))
         cv::Canny(image, mask, 50, 100);
 
         std::vector<cv::Vec4i> lines;
-        cv::HoughLinesP(mask, lines, rho, theta, threshold, minLineLenght, maxLineGap);
+        cv::HoughLinesP(mask, lines, rho, theta, threshold, minLineLength, maxLineGap);
 
         TEST_CYCLE()
         {
-            cv::HoughLinesP(mask, lines, rho, theta, threshold, minLineLenght, maxLineGap);
+            cv::HoughLinesP(mask, lines, rho, theta, threshold, minLineLength, maxLineGap);
         }
     }
 

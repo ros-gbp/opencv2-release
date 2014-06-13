@@ -1313,6 +1313,8 @@ bool CvVideoWriter_AVFoundation::writeFrame(const IplImage* iplimage) {
     }
 
     //cleanup
+    CFRelease(cfData);
+    CVPixelBufferRelease(pixelBuffer);
     CGImageRelease(cgImage);
     CGDataProviderRelease(provider);
     CGColorSpaceRelease(colorSpace);
@@ -1329,4 +1331,3 @@ bool CvVideoWriter_AVFoundation::writeFrame(const IplImage* iplimage) {
     }
 
 }
-

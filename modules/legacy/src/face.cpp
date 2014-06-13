@@ -200,6 +200,7 @@ void RFace::CalculateError(FaceData * lpFaceData)
 void  RFace::CreateFace(void * lpData)
 {
     FaceData Data;
+    memset(&Data, 0, sizeof(FaceData));
 
     double Error = MAX_ERROR;
     double CurError = MAX_ERROR;
@@ -351,4 +352,3 @@ inline void RFace::ResizeRect(CvRect Rect,CvRect * lpRect,long lDir,long lD)
     }
 
 }// inline void RFace::ResizeRect(CvRect * lpRect,long lDir,long lD)
-

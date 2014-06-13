@@ -26,7 +26,7 @@
 //
 //   * Redistribution's in binary form must reproduce the above copyright notice,
 //     this list of conditions and the following disclaimer in the documentation
-//     and/or other oclMaterials provided with the distribution.
+//     and/or other materials provided with the distribution.
 //
 //   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
@@ -43,125 +43,133 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#include "precomp.hpp"
+#include "perf_precomp.hpp"
+
+using namespace perf;
+using std::tr1::get;
 
 //////////////////// BruteForceMatch /////////////////
-PERFTEST(BruteForceMatcher)
+
+typedef Size_MatType BruteForceMatcherFixture;
+
+OCL_PERF_TEST_P(BruteForceMatcherFixture, Match,
+                ::testing::Combine(OCL_PERF_ENUM(OCL_SIZE_1, OCL_SIZE_2, OCL_SIZE_3),
+                                   OCL_PERF_ENUM(MatType(CV_32FC1))))
 {
-    Mat trainIdx_cpu;
-    Mat distance_cpu;
-    Mat allDist_cpu;
-    Mat nMatches_cpu;
+    const Size_MatType_t params = GetParam();
+    const Size srcSize = get<0>(params);
+    const int type = get<1>(params);
 
-    for (int size = Min_Size; size <= Max_Size; size *= Multiple)
+    vector<DMatch> matches;
+    Mat query(srcSize, type), train(srcSize, type);
+    declare.in(query, train);
+    randu(query, 0.0f, 1.0f);
+    randu(train, 0.0f, 1.0f);
+
+    if (RUN_PLAIN_IMPL)
     {
-        // Init CPU matcher
-        int desc_len = 64;
-
         BFMatcher matcher(NORM_L2);
+        TEST_CYCLE() matcher.match(query, train, matches);
 
-        Mat query;
-        gen(query, size, desc_len, CV_32F, 0, 1);
-
-        Mat train;
-        gen(train, size, desc_len, CV_32F, 0, 1);
-        // Output
-        vector< vector<DMatch> > matches(2);
-        vector< vector<DMatch> > d_matches(2);
-        // Init GPU matcher
-        ocl::BruteForceMatcher_OCL_base d_matcher(ocl::BruteForceMatcher_OCL_base::L2Dist);
-
-        ocl::oclMat d_query(query);
-        ocl::oclMat d_train(train);
-
-        ocl::oclMat d_trainIdx, d_distance, d_allDist, d_nMatches;
-
-        SUBTEST << size << "; match";
-
-        matcher.match(query, train, matches[0]);
-
-        CPU_ON;
-        matcher.match(query, train, matches[0]);
-        CPU_OFF;
-
-        WARMUP_ON;
-        d_matcher.matchSingle(d_query, d_train, d_trainIdx, d_distance);
-        WARMUP_OFF;
-
-        GPU_ON;
-        d_matcher.matchSingle(d_query, d_train, d_trainIdx, d_distance);
-        GPU_OFF;
-
-        GPU_FULL_ON;
-        d_query.upload(query);
-        d_train.upload(train);
-        d_matcher.match(d_query, d_train, d_matches[0]);
-        GPU_FULL_OFF;
-
-        int diff = abs((int)d_matches[0].size() - (int)matches[0].size());
-        if(diff == 0)
-            TestSystem::instance().setAccurate(1, 0);
-        else
-            TestSystem::instance().setAccurate(0, diff);
-
-        SUBTEST << size << "; knnMatch";
-
-        matcher.knnMatch(query, train, matches, 2);
-
-        CPU_ON;
-        matcher.knnMatch(query, train, matches, 2);
-        CPU_OFF;
-
-        WARMUP_ON;
-        d_matcher.knnMatchSingle(d_query, d_train, d_trainIdx, d_distance, d_allDist, 2);
-        WARMUP_OFF;
-
-        GPU_ON;
-        d_matcher.knnMatchSingle(d_query, d_train, d_trainIdx, d_distance, d_allDist, 2);
-        GPU_OFF;
-
-        GPU_FULL_ON;
-        d_query.upload(query);
-        d_train.upload(train);
-        d_matcher.knnMatch(d_query, d_train, d_matches, 2);
-        GPU_FULL_OFF;
-
-        diff = abs((int)d_matches[0].size() - (int)matches[0].size());
-        if(diff == 0)
-            TestSystem::instance().setAccurate(1, 0);
-        else
-            TestSystem::instance().setAccurate(0, diff);
-
-        SUBTEST << size << "; radiusMatch";
-
-        float max_distance = 2.0f;
-
-        matcher.radiusMatch(query, train, matches, max_distance);
-
-        CPU_ON;
-        matcher.radiusMatch(query, train, matches, max_distance);
-        CPU_OFF;
-
-        d_trainIdx.release();
-
-        WARMUP_ON;
-        d_matcher.radiusMatchSingle(d_query, d_train, d_trainIdx, d_distance, d_nMatches, max_distance);
-        WARMUP_OFF;
-
-        GPU_ON;
-        d_matcher.radiusMatchSingle(d_query, d_train, d_trainIdx, d_distance, d_nMatches, max_distance);
-        GPU_OFF;
-
-        GPU_FULL_ON;
-        d_query.upload(query);
-        d_train.upload(train);
-        d_matcher.radiusMatch(d_query, d_train, d_matches, max_distance);
-        GPU_FULL_OFF;
-
-        diff = abs((int)d_matches[0].size() - (int)matches[0].size());
-        if(diff == 0)
-            TestSystem::instance().setAccurate(1, 0);
-        else
-            TestSystem::instance().setAccurate(0, diff);
+        SANITY_CHECK_MATCHES(matches);
     }
+    else if (RUN_OCL_IMPL)
+    {
+        ocl::BruteForceMatcher_OCL_base oclMatcher(ocl::BruteForceMatcher_OCL_base::L2Dist);
+        ocl::oclMat oclQuery(query), oclTrain(train);
+
+        OCL_TEST_CYCLE()
+            oclMatcher.match(oclQuery, oclTrain, matches);
+
+        SANITY_CHECK_MATCHES(matches, 1e-5);
+    }
+    else
+        OCL_PERF_ELSE
+}
+
+OCL_PERF_TEST_P(BruteForceMatcherFixture, KnnMatch,
+                ::testing::Combine(OCL_PERF_ENUM(OCL_SIZE_1, OCL_SIZE_2, OCL_SIZE_3),
+                                   OCL_PERF_ENUM(MatType(CV_32FC1))))
+{
+    const Size_MatType_t params = GetParam();
+    const Size srcSize = get<0>(params);
+    const int type = get<1>(params);
+
+    vector<vector<DMatch> > matches(2);
+    Mat query(srcSize, type), train(srcSize, type);
+    randu(query, 0.0f, 1.0f);
+    randu(train, 0.0f, 1.0f);
+
+    declare.in(query, train);
+
+    if (RUN_PLAIN_IMPL)
+    {
+        BFMatcher matcher(NORM_L2);
+        TEST_CYCLE() matcher.knnMatch(query, train, matches, 2);
+
+        std::vector<DMatch> & matches0 = matches[0], & matches1 = matches[1];
+        SANITY_CHECK_MATCHES(matches0);
+        SANITY_CHECK_MATCHES(matches1);
+    }
+    else if (RUN_OCL_IMPL)
+    {
+        ocl::BruteForceMatcher_OCL_base oclMatcher(ocl::BruteForceMatcher_OCL_base::L2Dist);
+        ocl::oclMat oclQuery(query), oclTrain(train);
+        ocl::oclMat oclTrainIdx, oclDistance;
+
+        OCL_TEST_CYCLE()
+                oclMatcher.knnMatch(oclQuery, oclTrain, matches, 2);
+
+        oclMatcher.knnMatchDownload(oclTrainIdx, oclDistance, matches);
+
+        std::vector<DMatch> & matches0 = matches[0], & matches1 = matches[1];
+        SANITY_CHECK_MATCHES(matches0, 1e-5);
+        SANITY_CHECK_MATCHES(matches1, 1e-5);
+    }
+    else
+        OCL_PERF_ELSE
+}
+
+OCL_PERF_TEST_P(BruteForceMatcherFixture, RadiusMatch,
+                ::testing::Combine(OCL_PERF_ENUM(OCL_SIZE_1, OCL_SIZE_2, OCL_SIZE_3),
+                                   OCL_PERF_ENUM(MatType(CV_32FC1))))
+{
+    const Size_MatType_t params = GetParam();
+    const Size srcSize = get<0>(params);
+    const int type = get<1>(params);
+
+    const float max_distance = 2.0f;
+    vector<vector<DMatch> > matches(2);
+    Mat query(srcSize, type), train(srcSize, type);
+    declare.in(query, train);
+
+    randu(query, 0.0f, 1.0f);
+    randu(train, 0.0f, 1.0f);
+
+    if (RUN_PLAIN_IMPL)
+    {
+        cv::BFMatcher matcher(NORM_L2);
+        TEST_CYCLE() matcher.radiusMatch(query, train, matches, max_distance);
+
+        std::vector<DMatch> & matches0 = matches[0], & matches1 = matches[1];
+        SANITY_CHECK_MATCHES(matches0);
+        SANITY_CHECK_MATCHES(matches1);
+    }
+    else if (RUN_OCL_IMPL)
+    {
+        ocl::oclMat oclQuery(query), oclTrain(train);
+        ocl::BruteForceMatcher_OCL_base oclMatcher(ocl::BruteForceMatcher_OCL_base::L2Dist);
+        ocl::oclMat oclTrainIdx, oclDistance, oclNMatches;
+
+        OCL_TEST_CYCLE()
+                oclMatcher.radiusMatch(oclQuery, oclTrain, matches, max_distance);
+
+        oclMatcher.radiusMatchDownload(oclTrainIdx, oclDistance, oclNMatches, matches);
+
+        std::vector<DMatch> & matches0 = matches[0], & matches1 = matches[1];
+        SANITY_CHECK_MATCHES(matches0);
+        SANITY_CHECK_MATCHES(matches1);
+    }
+    else
+        OCL_PERF_ELSE
 }

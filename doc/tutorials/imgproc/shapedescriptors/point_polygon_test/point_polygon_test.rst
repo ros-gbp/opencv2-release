@@ -19,7 +19,7 @@ Theory
 Code
 ====
 
-This tutorial code's is shown lines below. You can also download it from `here <http://code.opencv.org/projects/opencv/repository/revisions/master/raw/samples/cpp/tutorial_code/ShapeDescriptors/pointPolygonTest_demo.cpp>`_
+This tutorial code's is shown lines below. You can also download it from `here <https://github.com/Itseez/opencv/tree/master/samples/cpp/tutorial_code/ShapeDescriptors/pointPolygonTest_demo.cpp>`_
 
 .. code-block:: cpp
 
@@ -114,4 +114,3 @@ Result
 
    .. |PPT_1|  image:: images/Point_Polygon_Test_Result.jpg
                     :align: middle
-
