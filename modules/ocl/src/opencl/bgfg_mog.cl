@@ -63,15 +63,18 @@ inline float sum(float val)
     return val;
 }
 
-static float clamp1(float var, float learningRate, float diff, float minVar)
+inline float clamp1(float var, float learningRate, float diff, float minVar)
 {
     return fmax(var + learningRate * (diff * diff - var), minVar);
 }
+
 #else
+
 #define T_FRAME uchar4
 #define T_MEAN_VAR float4
 #define CONVERT_TYPE convert_uchar4_sat
 #define F_ZERO (0.0f, 0.0f, 0.0f, 0.0f)
+
 inline float4 cvt(const uchar4 val)
 {
     float4 result;
@@ -93,7 +96,15 @@ inline float sum(const float4 val)
     return (val.x + val.y + val.z);
 }
 
-static float4 clamp1(const float4 var, float learningRate, const float4 diff, float minVar)
+inline void swap4(__global float4* ptr, int x, int y, int k, int rows, int ptr_step)
+{
+    float4 val = ptr[(k * rows + y) * ptr_step + x];
+    ptr[(k * rows + y) * ptr_step + x] = ptr[((k + 1) * rows + y) * ptr_step + x];
+    ptr[((k + 1) * rows + y) * ptr_step + x] = val;
+}
+
+
+inline float4 clamp1(const float4 var, float learningRate, const float4 diff, float minVar)
 {
     float4 result;
     result.x = fmax(var.x + learningRate * (diff.x * diff.x - var.x), minVar);
@@ -102,6 +113,7 @@ static float4 clamp1(const float4 var, float learningRate, const float4 diff, fl
     result.w = 0.0f;
     return result;
 }
+
 #endif
 
 typedef struct
@@ -114,18 +126,11 @@ typedef struct
     float c_varMax;
     float c_tau;
     uchar c_shadowVal;
-}con_srtuct_t;
+} con_srtuct_t;
 
-static void swap(__global float* ptr, int x, int y, int k, int rows, int ptr_step)
+inline void swap(__global float* ptr, int x, int y, int k, int rows, int ptr_step)
 {
     float val = ptr[(k * rows + y) * ptr_step + x];
-    ptr[(k * rows + y) * ptr_step + x] = ptr[((k + 1) * rows + y) * ptr_step + x];
-    ptr[((k + 1) * rows + y) * ptr_step + x] = val;
-}
-
-static void swap4(__global float4* ptr, int x, int y, int k, int rows, int ptr_step)
-{
-    float4 val = ptr[(k * rows + y) * ptr_step + x];
     ptr[(k * rows + y) * ptr_step + x] = ptr[((k + 1) * rows + y) * ptr_step + x];
     ptr[((k + 1) * rows + y) * ptr_step + x] = val;
 }
@@ -371,7 +376,7 @@ __kernel void mog2_kernel(__global T_FRAME * frame, __global int* fgmask, __glob
         for (int mode = 0; mode < nmodes; ++mode)
         {
             float _weight = alpha1 * weight[(mode * frame_row + y) * weight_step + x] + prune;
-
+            int swap_count = 0;
             if (!fitsPDF)
             {
                 float var = variance[(mode * frame_row + y) * var_step + x];
@@ -399,6 +404,7 @@ __kernel void mog2_kernel(__global T_FRAME * frame, __global int* fgmask, __glob
                     {
                         if (_weight < weight[((i - 1) * frame_row + y) * weight_step + x])
                             break;
+                        swap_count++;
                         swap(weight, x, y, i - 1, frame_row, weight_step);
                         swap(variance, x, y, i - 1, frame_row, var_step);
                         #if defined (CN1)
@@ -416,7 +422,7 @@ __kernel void mog2_kernel(__global T_FRAME * frame, __global int* fgmask, __glob
                 nmodes--;
             }
 
-            weight[(mode * frame_row + y) * weight_step + x] = _weight; //update weight by the calculated value
+            weight[((mode - swap_count) * frame_row + y) * weight_step + x] = _weight; //update weight by the calculated value
             totalWeight += _weight;
         }
 
