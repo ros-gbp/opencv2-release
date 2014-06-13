@@ -11,7 +11,7 @@ Using OpenCV with gcc and CMake
    * The easiest way of using OpenCV in your code is to use `CMake <http://www.cmake.org/>`_. A few advantages (taken from the Wiki):
 
      #. No need to change anything when porting between Linux and Windows
-     #. Can easily be combined with other tools by CMake( i.e. Qt, ITK and VTK ) 
+     #. Can easily be combined with other tools by CMake( i.e. Qt, ITK and VTK )
 
    * If you are not familiar with CMake, checkout the `tutorial <http://www.cmake.org/cmake/help/cmake_tutorial.html>`_ on its website.
 
@@ -21,33 +21,38 @@ Steps
 Create a program using OpenCV
 -------------------------------
 
-Let's use a simple program such as DisplayImage.cpp shown below. 
+Let's use a simple program such as DisplayImage.cpp shown below.
 
 .. code-block:: cpp
 
-   #include <stdio.h>
-   #include <opencv2/opencv.hpp>
+  #include <stdio.h>
+  #include <opencv2/opencv.hpp>
 
-   using namespace cv;
+  using namespace cv;
 
-   int main( int argc, char** argv )
-   {
-     Mat image;
-     image = imread( argv[1], 1 );
+  int main(int argc, char** argv )
+  {
+      if ( argc != 2 )
+      {
+          printf("usage: DisplayImage.out <Image_Path>\n");
+          return -1;
+      }
 
-     if( argc != 2 || !image.data )
-       { 
-         printf( "No image data \n" );
-         return -1; 
-       }
+      Mat image;
+      image = imread( argv[1], 1 );
 
-     namedWindow( "Display Image", CV_WINDOW_AUTOSIZE );
-     imshow( "Display Image", image );
+      if ( !image.data )
+      {
+          printf("No image data \n");
+          return -1;
+      }
+      namedWindow("Display Image", CV_WINDOW_AUTOSIZE );
+      imshow("Display Image", image);
 
-     waitKey(0);
+      waitKey(0);
 
-     return 0;
-   }
+      return 0;
+  }
 
 Create a CMake file
 ---------------------

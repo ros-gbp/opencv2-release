@@ -744,7 +744,7 @@ static void fjac(int /*i*/, int /*j*/, CvMat *point_params, CvMat* cam_params, C
   CvMat* _mp = cvCreateMat(1, 1, CV_64FC2 ); //projection of the point
 
   //split camera params into different matrices
-  CvMat _ri, _ti, _k;
+  CvMat _ri, _ti, _k = cvMat(0, 0, CV_64F, NULL); // dummy initialization to fix warning of cl.exe
   cvGetRows( cam_params, &_ri, 0, 3 );
   cvGetRows( cam_params, &_ti, 3, 6 );
 
@@ -938,7 +938,7 @@ static void fjac(int /*i*/, int /*j*/, CvMat *point_params, CvMat* cam_params, C
 
 #endif
 
-};
+}
 static void func(int /*i*/, int /*j*/, CvMat *point_params, CvMat* cam_params, CvMat* estim, void* /*data*/) {
   //just do projections
   CvMat _Mi;
@@ -977,17 +977,17 @@ static void func(int /*i*/, int /*j*/, CvMat *point_params, CvMat* cam_params, C
   cvTranspose( _mp2, estim );
   cvReleaseMat( &_mp );
   cvReleaseMat( &_mp2 );
-};
+}
 
 static void fjac_new(int i, int j, Mat& point_params, Mat& cam_params, Mat& A, Mat& B, void* data) {
   CvMat _point_params = point_params, _cam_params = cam_params, _Al = A, _Bl = B;
   fjac(i,j, &_point_params, &_cam_params, &_Al, &_Bl, data);
-};
+}
 
 static void func_new(int i, int j, Mat& point_params, Mat& cam_params, Mat& estim, void* data)  {
   CvMat _point_params = point_params, _cam_params = cam_params, _estim = estim;
   func(i,j,&_point_params,&_cam_params,&_estim,data);
-};
+}
 
 void LevMarqSparse::bundleAdjust( vector<Point3d>& points, //positions of points in global coordinate system (input and output)
           const vector<vector<Point2d> >& imagePoints, //projections of 3d points for every camera

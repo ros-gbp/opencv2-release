@@ -52,7 +52,7 @@ enum
 {
     MOUTH = 0,
     LEYE = 1,
-    REYE = 2,
+    REYE = 2
 };
 
 #define MAX_LAYERS      64
@@ -971,4 +971,3 @@ inline double CalculateTransformationLMS3_0( CvPoint* pTemplPoints, CvPoint* pSr
         dbLMS = dbXtXt + dbYtYt - ((double)pow(dbXtXs + dbYtYs,2) + (double)pow(dbXtYs - dbYtXs,2)) / del;
     return dbLMS;
 }
-

@@ -94,14 +94,14 @@ Code
         * Loads an image
         * Convert the original to HSV format and separate only *Hue* channel to be used for the Histogram (using the OpenCV function :mix_channels:`mixChannels <>`)
         * Let the user to enter the number of bins to be used in the calculation of the histogram.
-	* Calculate the histogram (and update it if the bins change) and the backprojection of the same image.
+        * Calculate the histogram (and update it if the bins change) and the backprojection of the same image.
         * Display the backprojection and the histogram in windows.
 
    * **Downloadable code**:
 
-      a. Click `here <http://code.opencv.org/projects/opencv/repository/revisions/master/raw/samples/cpp/tutorial_code/Histograms_Matching/calcBackProject_Demo1.cpp>`_ for the basic version (explained in this tutorial).
-      b. For stuff slightly fancier (using H-S histograms and floodFill to define a mask for the skin area) you can check the `improved demo <http://code.opencv.org/projects/opencv/repository/revisions/master/raw/samples/cpp/tutorial_code/Histograms_Matching/calcBackProject_Demo2.cpp>`_
-      c. ...or you can always check out the classical `camshiftdemo <http://code.opencv.org/projects/opencv/repository/revisions/master/raw/samples/cpp/camshiftdemo.cpp>`_ in samples.
+      a. Click `here <https://github.com/Itseez/opencv/tree/master/samples/cpp/tutorial_code/Histograms_Matching/calcBackProject_Demo1.cpp>`_ for the basic version (explained in this tutorial).
+      b. For stuff slightly fancier (using H-S histograms and floodFill to define a mask for the skin area) you can check the `improved demo <https://github.com/Itseez/opencv/tree/master/samples/cpp/tutorial_code/Histograms_Matching/calcBackProject_Demo2.cpp>`_
+      c. ...or you can always check out the classical `camshiftdemo <https://github.com/Itseez/opencv/tree/master/samples/cpp/camshiftdemo.cpp>`_ in samples.
 
    * **Code at glance:**
 

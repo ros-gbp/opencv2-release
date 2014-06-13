@@ -43,9 +43,7 @@
 #ifndef __OPENCV_STITCHING_PRECOMP_H__
 #define __OPENCV_STITCHING_PRECOMP_H__
 
-#ifdef HAVE_CVCONFIG_H
 #include "cvconfig.h"
-#endif
 #include "opencv2/opencv_modules.hpp"
 
 #include <vector>
@@ -70,7 +68,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
-#ifdef HAVE_OPENCV_GPU
+#if defined(HAVE_OPENCV_GPU) && !defined(DYNAMIC_CUDA_SUPPORT)
     #include "opencv2/gpu/gpu.hpp"
 
     #ifdef HAVE_OPENCV_NONFREE

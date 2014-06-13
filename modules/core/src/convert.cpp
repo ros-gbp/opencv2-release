@@ -194,17 +194,27 @@ static void merge64s(const int64** src, int64* dst, int len, int cn )
 typedef void (*SplitFunc)(const uchar* src, uchar** dst, int len, int cn);
 typedef void (*MergeFunc)(const uchar** src, uchar* dst, int len, int cn);
 
-static SplitFunc splitTab[] =
+static SplitFunc getSplitFunc(int depth)
 {
-    (SplitFunc)GET_OPTIMIZED(split8u), (SplitFunc)GET_OPTIMIZED(split8u), (SplitFunc)GET_OPTIMIZED(split16u), (SplitFunc)GET_OPTIMIZED(split16u),
-    (SplitFunc)GET_OPTIMIZED(split32s), (SplitFunc)GET_OPTIMIZED(split32s), (SplitFunc)GET_OPTIMIZED(split64s), 0
-};
+    static SplitFunc splitTab[] =
+    {
+        (SplitFunc)GET_OPTIMIZED(split8u), (SplitFunc)GET_OPTIMIZED(split8u), (SplitFunc)GET_OPTIMIZED(split16u), (SplitFunc)GET_OPTIMIZED(split16u),
+        (SplitFunc)GET_OPTIMIZED(split32s), (SplitFunc)GET_OPTIMIZED(split32s), (SplitFunc)GET_OPTIMIZED(split64s), 0
+    };
 
-static MergeFunc mergeTab[] =
+    return splitTab[depth];
+}
+
+static MergeFunc getMergeFunc(int depth)
 {
-    (MergeFunc)GET_OPTIMIZED(merge8u), (MergeFunc)GET_OPTIMIZED(merge8u), (MergeFunc)GET_OPTIMIZED(merge16u), (MergeFunc)GET_OPTIMIZED(merge16u),
-    (MergeFunc)GET_OPTIMIZED(merge32s), (MergeFunc)GET_OPTIMIZED(merge32s), (MergeFunc)GET_OPTIMIZED(merge64s), 0
-};
+    static MergeFunc mergeTab[] =
+    {
+        (MergeFunc)GET_OPTIMIZED(merge8u), (MergeFunc)GET_OPTIMIZED(merge8u), (MergeFunc)GET_OPTIMIZED(merge16u), (MergeFunc)GET_OPTIMIZED(merge16u),
+        (MergeFunc)GET_OPTIMIZED(merge32s), (MergeFunc)GET_OPTIMIZED(merge32s), (MergeFunc)GET_OPTIMIZED(merge64s), 0
+    };
+
+    return mergeTab[depth];
+}
 
 }
 
@@ -217,7 +227,7 @@ void cv::split(const Mat& src, Mat* mv)
         return;
     }
 
-    SplitFunc func = splitTab[depth];
+    SplitFunc func = getSplitFunc(depth);
     CV_Assert( func != 0 );
 
     int esz = (int)src.elemSize(), esz1 = (int)src.elemSize1();
@@ -328,7 +338,7 @@ void cv::merge(const Mat* mv, size_t n, OutputArray _dst)
 
     NAryMatIterator it(arrays, ptrs, cn+1);
     int total = (int)it.size, blocksize = cn <= 4 ? total : std::min(total, blocksize0);
-    MergeFunc func = mergeTab[depth];
+    MergeFunc func = getMergeFunc(depth);
 
     for( i = 0; i < it.nplanes; i++, ++it )
     {
@@ -429,12 +439,17 @@ static void mixChannels64s( const int64** src, const int* sdelta,
 typedef void (*MixChannelsFunc)( const uchar** src, const int* sdelta,
         uchar** dst, const int* ddelta, int len, int npairs );
 
-static MixChannelsFunc mixchTab[] =
+static MixChannelsFunc getMixchFunc(int depth)
 {
-    (MixChannelsFunc)mixChannels8u, (MixChannelsFunc)mixChannels8u, (MixChannelsFunc)mixChannels16u,
-    (MixChannelsFunc)mixChannels16u, (MixChannelsFunc)mixChannels32s, (MixChannelsFunc)mixChannels32s,
-    (MixChannelsFunc)mixChannels64s, 0
-};
+    static MixChannelsFunc mixchTab[] =
+    {
+        (MixChannelsFunc)mixChannels8u, (MixChannelsFunc)mixChannels8u, (MixChannelsFunc)mixChannels16u,
+        (MixChannelsFunc)mixChannels16u, (MixChannelsFunc)mixChannels32s, (MixChannelsFunc)mixChannels32s,
+        (MixChannelsFunc)mixChannels64s, 0
+    };
+
+    return mixchTab[depth];
+}
 
 }
 
@@ -489,7 +504,7 @@ void cv::mixChannels( const Mat* src, size_t nsrcs, Mat* dst, size_t ndsts, cons
 
     NAryMatIterator it(arrays, ptrs, (int)(nsrcs + ndsts));
     int total = (int)it.size, blocksize = std::min(total, (int)((BLOCK_SIZE + esz1-1)/esz1));
-    MixChannelsFunc func = mixchTab[depth];
+    MixChannelsFunc func = getMixchFunc(depth);
 
     for( i = 0; i < it.nplanes; i++, ++it )
     {
@@ -824,221 +839,226 @@ stype* dst, size_t dstep, Size size, double*) \
 }
 
 
-DEF_CVT_SCALE_ABS_FUNC(8u, cvtScaleAbs_, uchar, uchar, float);
-DEF_CVT_SCALE_ABS_FUNC(8s8u, cvtScaleAbs_, schar, uchar, float);
-DEF_CVT_SCALE_ABS_FUNC(16u8u, cvtScaleAbs_, ushort, uchar, float);
-DEF_CVT_SCALE_ABS_FUNC(16s8u, cvtScaleAbs_, short, uchar, float);
-DEF_CVT_SCALE_ABS_FUNC(32s8u, cvtScaleAbs_, int, uchar, float);
-DEF_CVT_SCALE_ABS_FUNC(32f8u, cvtScaleAbs_, float, uchar, float);
-DEF_CVT_SCALE_ABS_FUNC(64f8u, cvtScaleAbs_, double, uchar, float);
+DEF_CVT_SCALE_ABS_FUNC(8u, cvtScaleAbs_, uchar, uchar, float)
+DEF_CVT_SCALE_ABS_FUNC(8s8u, cvtScaleAbs_, schar, uchar, float)
+DEF_CVT_SCALE_ABS_FUNC(16u8u, cvtScaleAbs_, ushort, uchar, float)
+DEF_CVT_SCALE_ABS_FUNC(16s8u, cvtScaleAbs_, short, uchar, float)
+DEF_CVT_SCALE_ABS_FUNC(32s8u, cvtScaleAbs_, int, uchar, float)
+DEF_CVT_SCALE_ABS_FUNC(32f8u, cvtScaleAbs_, float, uchar, float)
+DEF_CVT_SCALE_ABS_FUNC(64f8u, cvtScaleAbs_, double, uchar, float)
 
-DEF_CVT_SCALE_FUNC(8u,     uchar, uchar, float);
-DEF_CVT_SCALE_FUNC(8s8u,   schar, uchar, float);
-DEF_CVT_SCALE_FUNC(16u8u,  ushort, uchar, float);
-DEF_CVT_SCALE_FUNC(16s8u,  short, uchar, float);
-DEF_CVT_SCALE_FUNC(32s8u,  int, uchar, float);
-DEF_CVT_SCALE_FUNC(32f8u,  float, uchar, float);
-DEF_CVT_SCALE_FUNC(64f8u,  double, uchar, float);
+DEF_CVT_SCALE_FUNC(8u,     uchar, uchar, float)
+DEF_CVT_SCALE_FUNC(8s8u,   schar, uchar, float)
+DEF_CVT_SCALE_FUNC(16u8u,  ushort, uchar, float)
+DEF_CVT_SCALE_FUNC(16s8u,  short, uchar, float)
+DEF_CVT_SCALE_FUNC(32s8u,  int, uchar, float)
+DEF_CVT_SCALE_FUNC(32f8u,  float, uchar, float)
+DEF_CVT_SCALE_FUNC(64f8u,  double, uchar, float)
 
-DEF_CVT_SCALE_FUNC(8u8s,   uchar, schar, float);
-DEF_CVT_SCALE_FUNC(8s,     schar, schar, float);
-DEF_CVT_SCALE_FUNC(16u8s,  ushort, schar, float);
-DEF_CVT_SCALE_FUNC(16s8s,  short, schar, float);
-DEF_CVT_SCALE_FUNC(32s8s,  int, schar, float);
-DEF_CVT_SCALE_FUNC(32f8s,  float, schar, float);
-DEF_CVT_SCALE_FUNC(64f8s,  double, schar, float);
+DEF_CVT_SCALE_FUNC(8u8s,   uchar, schar, float)
+DEF_CVT_SCALE_FUNC(8s,     schar, schar, float)
+DEF_CVT_SCALE_FUNC(16u8s,  ushort, schar, float)
+DEF_CVT_SCALE_FUNC(16s8s,  short, schar, float)
+DEF_CVT_SCALE_FUNC(32s8s,  int, schar, float)
+DEF_CVT_SCALE_FUNC(32f8s,  float, schar, float)
+DEF_CVT_SCALE_FUNC(64f8s,  double, schar, float)
 
-DEF_CVT_SCALE_FUNC(8u16u,  uchar, ushort, float);
-DEF_CVT_SCALE_FUNC(8s16u,  schar, ushort, float);
-DEF_CVT_SCALE_FUNC(16u,    ushort, ushort, float);
-DEF_CVT_SCALE_FUNC(16s16u, short, ushort, float);
-DEF_CVT_SCALE_FUNC(32s16u, int, ushort, float);
-DEF_CVT_SCALE_FUNC(32f16u, float, ushort, float);
-DEF_CVT_SCALE_FUNC(64f16u, double, ushort, float);
+DEF_CVT_SCALE_FUNC(8u16u,  uchar, ushort, float)
+DEF_CVT_SCALE_FUNC(8s16u,  schar, ushort, float)
+DEF_CVT_SCALE_FUNC(16u,    ushort, ushort, float)
+DEF_CVT_SCALE_FUNC(16s16u, short, ushort, float)
+DEF_CVT_SCALE_FUNC(32s16u, int, ushort, float)
+DEF_CVT_SCALE_FUNC(32f16u, float, ushort, float)
+DEF_CVT_SCALE_FUNC(64f16u, double, ushort, float)
 
-DEF_CVT_SCALE_FUNC(8u16s,  uchar, short, float);
-DEF_CVT_SCALE_FUNC(8s16s,  schar, short, float);
-DEF_CVT_SCALE_FUNC(16u16s, ushort, short, float);
-DEF_CVT_SCALE_FUNC(16s,    short, short, float);
-DEF_CVT_SCALE_FUNC(32s16s, int, short, float);
-DEF_CVT_SCALE_FUNC(32f16s, float, short, float);
-DEF_CVT_SCALE_FUNC(64f16s, double, short, float);
+DEF_CVT_SCALE_FUNC(8u16s,  uchar, short, float)
+DEF_CVT_SCALE_FUNC(8s16s,  schar, short, float)
+DEF_CVT_SCALE_FUNC(16u16s, ushort, short, float)
+DEF_CVT_SCALE_FUNC(16s,    short, short, float)
+DEF_CVT_SCALE_FUNC(32s16s, int, short, float)
+DEF_CVT_SCALE_FUNC(32f16s, float, short, float)
+DEF_CVT_SCALE_FUNC(64f16s, double, short, float)
 
-DEF_CVT_SCALE_FUNC(8u32s,  uchar, int, float);
-DEF_CVT_SCALE_FUNC(8s32s,  schar, int, float);
-DEF_CVT_SCALE_FUNC(16u32s, ushort, int, float);
-DEF_CVT_SCALE_FUNC(16s32s, short, int, float);
-DEF_CVT_SCALE_FUNC(32s,    int, int, double);
-DEF_CVT_SCALE_FUNC(32f32s, float, int, float);
-DEF_CVT_SCALE_FUNC(64f32s, double, int, double);
+DEF_CVT_SCALE_FUNC(8u32s,  uchar, int, float)
+DEF_CVT_SCALE_FUNC(8s32s,  schar, int, float)
+DEF_CVT_SCALE_FUNC(16u32s, ushort, int, float)
+DEF_CVT_SCALE_FUNC(16s32s, short, int, float)
+DEF_CVT_SCALE_FUNC(32s,    int, int, double)
+DEF_CVT_SCALE_FUNC(32f32s, float, int, float)
+DEF_CVT_SCALE_FUNC(64f32s, double, int, double)
 
-DEF_CVT_SCALE_FUNC(8u32f,  uchar, float, float);
-DEF_CVT_SCALE_FUNC(8s32f,  schar, float, float);
-DEF_CVT_SCALE_FUNC(16u32f, ushort, float, float);
-DEF_CVT_SCALE_FUNC(16s32f, short, float, float);
-DEF_CVT_SCALE_FUNC(32s32f, int, float, double);
-DEF_CVT_SCALE_FUNC(32f,    float, float, float);
-DEF_CVT_SCALE_FUNC(64f32f, double, float, double);
+DEF_CVT_SCALE_FUNC(8u32f,  uchar, float, float)
+DEF_CVT_SCALE_FUNC(8s32f,  schar, float, float)
+DEF_CVT_SCALE_FUNC(16u32f, ushort, float, float)
+DEF_CVT_SCALE_FUNC(16s32f, short, float, float)
+DEF_CVT_SCALE_FUNC(32s32f, int, float, double)
+DEF_CVT_SCALE_FUNC(32f,    float, float, float)
+DEF_CVT_SCALE_FUNC(64f32f, double, float, double)
 
-DEF_CVT_SCALE_FUNC(8u64f,  uchar, double, double);
-DEF_CVT_SCALE_FUNC(8s64f,  schar, double, double);
-DEF_CVT_SCALE_FUNC(16u64f, ushort, double, double);
-DEF_CVT_SCALE_FUNC(16s64f, short, double, double);
-DEF_CVT_SCALE_FUNC(32s64f, int, double, double);
-DEF_CVT_SCALE_FUNC(32f64f, float, double, double);
-DEF_CVT_SCALE_FUNC(64f,    double, double, double);
+DEF_CVT_SCALE_FUNC(8u64f,  uchar, double, double)
+DEF_CVT_SCALE_FUNC(8s64f,  schar, double, double)
+DEF_CVT_SCALE_FUNC(16u64f, ushort, double, double)
+DEF_CVT_SCALE_FUNC(16s64f, short, double, double)
+DEF_CVT_SCALE_FUNC(32s64f, int, double, double)
+DEF_CVT_SCALE_FUNC(32f64f, float, double, double)
+DEF_CVT_SCALE_FUNC(64f,    double, double, double)
 
-DEF_CPY_FUNC(8u,     uchar);
-DEF_CVT_FUNC(8s8u,   schar, uchar);
-DEF_CVT_FUNC(16u8u,  ushort, uchar);
-DEF_CVT_FUNC(16s8u,  short, uchar);
-DEF_CVT_FUNC(32s8u,  int, uchar);
-DEF_CVT_FUNC(32f8u,  float, uchar);
-DEF_CVT_FUNC(64f8u,  double, uchar);
+DEF_CPY_FUNC(8u,     uchar)
+DEF_CVT_FUNC(8s8u,   schar, uchar)
+DEF_CVT_FUNC(16u8u,  ushort, uchar)
+DEF_CVT_FUNC(16s8u,  short, uchar)
+DEF_CVT_FUNC(32s8u,  int, uchar)
+DEF_CVT_FUNC(32f8u,  float, uchar)
+DEF_CVT_FUNC(64f8u,  double, uchar)
 
-DEF_CVT_FUNC(8u8s,   uchar, schar);
-DEF_CVT_FUNC(16u8s,  ushort, schar);
-DEF_CVT_FUNC(16s8s,  short, schar);
-DEF_CVT_FUNC(32s8s,  int, schar);
-DEF_CVT_FUNC(32f8s,  float, schar);
-DEF_CVT_FUNC(64f8s,  double, schar);
+DEF_CVT_FUNC(8u8s,   uchar, schar)
+DEF_CVT_FUNC(16u8s,  ushort, schar)
+DEF_CVT_FUNC(16s8s,  short, schar)
+DEF_CVT_FUNC(32s8s,  int, schar)
+DEF_CVT_FUNC(32f8s,  float, schar)
+DEF_CVT_FUNC(64f8s,  double, schar)
 
-DEF_CVT_FUNC(8u16u,  uchar, ushort);
-DEF_CVT_FUNC(8s16u,  schar, ushort);
-DEF_CPY_FUNC(16u,    ushort);
-DEF_CVT_FUNC(16s16u, short, ushort);
-DEF_CVT_FUNC(32s16u, int, ushort);
-DEF_CVT_FUNC(32f16u, float, ushort);
-DEF_CVT_FUNC(64f16u, double, ushort);
+DEF_CVT_FUNC(8u16u,  uchar, ushort)
+DEF_CVT_FUNC(8s16u,  schar, ushort)
+DEF_CPY_FUNC(16u,    ushort)
+DEF_CVT_FUNC(16s16u, short, ushort)
+DEF_CVT_FUNC(32s16u, int, ushort)
+DEF_CVT_FUNC(32f16u, float, ushort)
+DEF_CVT_FUNC(64f16u, double, ushort)
 
-DEF_CVT_FUNC(8u16s,  uchar, short);
-DEF_CVT_FUNC(8s16s,  schar, short);
-DEF_CVT_FUNC(16u16s, ushort, short);
-DEF_CVT_FUNC(32s16s, int, short);
-DEF_CVT_FUNC(32f16s, float, short);
-DEF_CVT_FUNC(64f16s, double, short);
+DEF_CVT_FUNC(8u16s,  uchar, short)
+DEF_CVT_FUNC(8s16s,  schar, short)
+DEF_CVT_FUNC(16u16s, ushort, short)
+DEF_CVT_FUNC(32s16s, int, short)
+DEF_CVT_FUNC(32f16s, float, short)
+DEF_CVT_FUNC(64f16s, double, short)
 
-DEF_CVT_FUNC(8u32s,  uchar, int);
-DEF_CVT_FUNC(8s32s,  schar, int);
-DEF_CVT_FUNC(16u32s, ushort, int);
-DEF_CVT_FUNC(16s32s, short, int);
-DEF_CPY_FUNC(32s,    int);
-DEF_CVT_FUNC(32f32s, float, int);
-DEF_CVT_FUNC(64f32s, double, int);
+DEF_CVT_FUNC(8u32s,  uchar, int)
+DEF_CVT_FUNC(8s32s,  schar, int)
+DEF_CVT_FUNC(16u32s, ushort, int)
+DEF_CVT_FUNC(16s32s, short, int)
+DEF_CPY_FUNC(32s,    int)
+DEF_CVT_FUNC(32f32s, float, int)
+DEF_CVT_FUNC(64f32s, double, int)
 
-DEF_CVT_FUNC(8u32f,  uchar, float);
-DEF_CVT_FUNC(8s32f,  schar, float);
-DEF_CVT_FUNC(16u32f, ushort, float);
-DEF_CVT_FUNC(16s32f, short, float);
-DEF_CVT_FUNC(32s32f, int, float);
-DEF_CVT_FUNC(64f32f, double, float);
+DEF_CVT_FUNC(8u32f,  uchar, float)
+DEF_CVT_FUNC(8s32f,  schar, float)
+DEF_CVT_FUNC(16u32f, ushort, float)
+DEF_CVT_FUNC(16s32f, short, float)
+DEF_CVT_FUNC(32s32f, int, float)
+DEF_CVT_FUNC(64f32f, double, float)
 
-DEF_CVT_FUNC(8u64f,  uchar, double);
-DEF_CVT_FUNC(8s64f,  schar, double);
-DEF_CVT_FUNC(16u64f, ushort, double);
-DEF_CVT_FUNC(16s64f, short, double);
-DEF_CVT_FUNC(32s64f, int, double);
-DEF_CVT_FUNC(32f64f, float, double);
-DEF_CPY_FUNC(64s,    int64);
+DEF_CVT_FUNC(8u64f,  uchar, double)
+DEF_CVT_FUNC(8s64f,  schar, double)
+DEF_CVT_FUNC(16u64f, ushort, double)
+DEF_CVT_FUNC(16s64f, short, double)
+DEF_CVT_FUNC(32s64f, int, double)
+DEF_CVT_FUNC(32f64f, float, double)
+DEF_CPY_FUNC(64s,    int64)
 
-static BinaryFunc cvtScaleAbsTab[] =
+static BinaryFunc getCvtScaleAbsFunc(int depth)
 {
-    (BinaryFunc)cvtScaleAbs8u, (BinaryFunc)cvtScaleAbs8s8u, (BinaryFunc)cvtScaleAbs16u8u,
-    (BinaryFunc)cvtScaleAbs16s8u, (BinaryFunc)cvtScaleAbs32s8u, (BinaryFunc)cvtScaleAbs32f8u,
-    (BinaryFunc)cvtScaleAbs64f8u, 0
-};
+    static BinaryFunc cvtScaleAbsTab[] =
+    {
+        (BinaryFunc)cvtScaleAbs8u, (BinaryFunc)cvtScaleAbs8s8u, (BinaryFunc)cvtScaleAbs16u8u,
+        (BinaryFunc)cvtScaleAbs16s8u, (BinaryFunc)cvtScaleAbs32s8u, (BinaryFunc)cvtScaleAbs32f8u,
+        (BinaryFunc)cvtScaleAbs64f8u, 0
+    };
 
-static BinaryFunc cvtScaleTab[][8] =
-{
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvtScale8u), (BinaryFunc)GET_OPTIMIZED(cvtScale8s8u), (BinaryFunc)GET_OPTIMIZED(cvtScale16u8u),
-        (BinaryFunc)GET_OPTIMIZED(cvtScale16s8u), (BinaryFunc)GET_OPTIMIZED(cvtScale32s8u), (BinaryFunc)GET_OPTIMIZED(cvtScale32f8u),
-        (BinaryFunc)cvtScale64f8u, 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvtScale8u8s), (BinaryFunc)GET_OPTIMIZED(cvtScale8s), (BinaryFunc)GET_OPTIMIZED(cvtScale16u8s),
-        (BinaryFunc)GET_OPTIMIZED(cvtScale16s8s), (BinaryFunc)GET_OPTIMIZED(cvtScale32s8s), (BinaryFunc)GET_OPTIMIZED(cvtScale32f8s),
-        (BinaryFunc)cvtScale64f8s, 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvtScale8u16u), (BinaryFunc)GET_OPTIMIZED(cvtScale8s16u), (BinaryFunc)GET_OPTIMIZED(cvtScale16u),
-        (BinaryFunc)GET_OPTIMIZED(cvtScale16s16u), (BinaryFunc)GET_OPTIMIZED(cvtScale32s16u), (BinaryFunc)GET_OPTIMIZED(cvtScale32f16u),
-        (BinaryFunc)cvtScale64f16u, 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvtScale8u16s), (BinaryFunc)GET_OPTIMIZED(cvtScale8s16s), (BinaryFunc)GET_OPTIMIZED(cvtScale16u16s),
-        (BinaryFunc)GET_OPTIMIZED(cvtScale16s), (BinaryFunc)GET_OPTIMIZED(cvtScale32s16s), (BinaryFunc)GET_OPTIMIZED(cvtScale32f16s),
-        (BinaryFunc)cvtScale64f16s, 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvtScale8u32s), (BinaryFunc)GET_OPTIMIZED(cvtScale8s32s), (BinaryFunc)GET_OPTIMIZED(cvtScale16u32s),
-        (BinaryFunc)GET_OPTIMIZED(cvtScale16s32s), (BinaryFunc)GET_OPTIMIZED(cvtScale32s), (BinaryFunc)GET_OPTIMIZED(cvtScale32f32s),
-        (BinaryFunc)cvtScale64f32s, 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvtScale8u32f), (BinaryFunc)GET_OPTIMIZED(cvtScale8s32f), (BinaryFunc)GET_OPTIMIZED(cvtScale16u32f),
-        (BinaryFunc)GET_OPTIMIZED(cvtScale16s32f), (BinaryFunc)GET_OPTIMIZED(cvtScale32s32f), (BinaryFunc)GET_OPTIMIZED(cvtScale32f),
-        (BinaryFunc)cvtScale64f32f, 0
-    },
-    {
-        (BinaryFunc)cvtScale8u64f, (BinaryFunc)cvtScale8s64f, (BinaryFunc)cvtScale16u64f,
-        (BinaryFunc)cvtScale16s64f, (BinaryFunc)cvtScale32s64f, (BinaryFunc)cvtScale32f64f,
-        (BinaryFunc)cvtScale64f, 0
-    },
-    {
-        0, 0, 0, 0, 0, 0, 0, 0
-    }
-};
-
-static BinaryFunc cvtTab[][8] =
-{
-    {
-        (BinaryFunc)(cvt8u), (BinaryFunc)GET_OPTIMIZED(cvt8s8u), (BinaryFunc)GET_OPTIMIZED(cvt16u8u),
-        (BinaryFunc)GET_OPTIMIZED(cvt16s8u), (BinaryFunc)GET_OPTIMIZED(cvt32s8u), (BinaryFunc)GET_OPTIMIZED(cvt32f8u),
-        (BinaryFunc)GET_OPTIMIZED(cvt64f8u), 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvt8u8s), (BinaryFunc)cvt8u, (BinaryFunc)GET_OPTIMIZED(cvt16u8s),
-        (BinaryFunc)GET_OPTIMIZED(cvt16s8s), (BinaryFunc)GET_OPTIMIZED(cvt32s8s), (BinaryFunc)GET_OPTIMIZED(cvt32f8s),
-        (BinaryFunc)GET_OPTIMIZED(cvt64f8s), 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvt8u16u), (BinaryFunc)GET_OPTIMIZED(cvt8s16u), (BinaryFunc)cvt16u,
-        (BinaryFunc)GET_OPTIMIZED(cvt16s16u), (BinaryFunc)GET_OPTIMIZED(cvt32s16u), (BinaryFunc)GET_OPTIMIZED(cvt32f16u),
-        (BinaryFunc)GET_OPTIMIZED(cvt64f16u), 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvt8u16s), (BinaryFunc)GET_OPTIMIZED(cvt8s16s), (BinaryFunc)GET_OPTIMIZED(cvt16u16s),
-        (BinaryFunc)cvt16u, (BinaryFunc)GET_OPTIMIZED(cvt32s16s), (BinaryFunc)GET_OPTIMIZED(cvt32f16s),
-        (BinaryFunc)GET_OPTIMIZED(cvt64f16s), 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvt8u32s), (BinaryFunc)GET_OPTIMIZED(cvt8s32s), (BinaryFunc)GET_OPTIMIZED(cvt16u32s),
-        (BinaryFunc)GET_OPTIMIZED(cvt16s32s), (BinaryFunc)cvt32s, (BinaryFunc)GET_OPTIMIZED(cvt32f32s),
-        (BinaryFunc)GET_OPTIMIZED(cvt64f32s), 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvt8u32f), (BinaryFunc)GET_OPTIMIZED(cvt8s32f), (BinaryFunc)GET_OPTIMIZED(cvt16u32f),
-        (BinaryFunc)GET_OPTIMIZED(cvt16s32f), (BinaryFunc)GET_OPTIMIZED(cvt32s32f), (BinaryFunc)cvt32s,
-        (BinaryFunc)GET_OPTIMIZED(cvt64f32f), 0
-    },
-    {
-        (BinaryFunc)GET_OPTIMIZED(cvt8u64f), (BinaryFunc)GET_OPTIMIZED(cvt8s64f), (BinaryFunc)GET_OPTIMIZED(cvt16u64f),
-        (BinaryFunc)GET_OPTIMIZED(cvt16s64f), (BinaryFunc)GET_OPTIMIZED(cvt32s64f), (BinaryFunc)GET_OPTIMIZED(cvt32f64f),
-        (BinaryFunc)(cvt64s), 0
-    },
-    {
-        0, 0, 0, 0, 0, 0, 0, 0
-    }
-};
+    return cvtScaleAbsTab[depth];
+}
 
 BinaryFunc getConvertFunc(int sdepth, int ddepth)
 {
+    static BinaryFunc cvtTab[][8] =
+    {
+        {
+            (BinaryFunc)(cvt8u), (BinaryFunc)GET_OPTIMIZED(cvt8s8u), (BinaryFunc)GET_OPTIMIZED(cvt16u8u),
+            (BinaryFunc)GET_OPTIMIZED(cvt16s8u), (BinaryFunc)GET_OPTIMIZED(cvt32s8u), (BinaryFunc)GET_OPTIMIZED(cvt32f8u),
+            (BinaryFunc)GET_OPTIMIZED(cvt64f8u), 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvt8u8s), (BinaryFunc)cvt8u, (BinaryFunc)GET_OPTIMIZED(cvt16u8s),
+            (BinaryFunc)GET_OPTIMIZED(cvt16s8s), (BinaryFunc)GET_OPTIMIZED(cvt32s8s), (BinaryFunc)GET_OPTIMIZED(cvt32f8s),
+            (BinaryFunc)GET_OPTIMIZED(cvt64f8s), 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvt8u16u), (BinaryFunc)GET_OPTIMIZED(cvt8s16u), (BinaryFunc)cvt16u,
+            (BinaryFunc)GET_OPTIMIZED(cvt16s16u), (BinaryFunc)GET_OPTIMIZED(cvt32s16u), (BinaryFunc)GET_OPTIMIZED(cvt32f16u),
+            (BinaryFunc)GET_OPTIMIZED(cvt64f16u), 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvt8u16s), (BinaryFunc)GET_OPTIMIZED(cvt8s16s), (BinaryFunc)GET_OPTIMIZED(cvt16u16s),
+            (BinaryFunc)cvt16u, (BinaryFunc)GET_OPTIMIZED(cvt32s16s), (BinaryFunc)GET_OPTIMIZED(cvt32f16s),
+            (BinaryFunc)GET_OPTIMIZED(cvt64f16s), 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvt8u32s), (BinaryFunc)GET_OPTIMIZED(cvt8s32s), (BinaryFunc)GET_OPTIMIZED(cvt16u32s),
+            (BinaryFunc)GET_OPTIMIZED(cvt16s32s), (BinaryFunc)cvt32s, (BinaryFunc)GET_OPTIMIZED(cvt32f32s),
+            (BinaryFunc)GET_OPTIMIZED(cvt64f32s), 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvt8u32f), (BinaryFunc)GET_OPTIMIZED(cvt8s32f), (BinaryFunc)GET_OPTIMIZED(cvt16u32f),
+            (BinaryFunc)GET_OPTIMIZED(cvt16s32f), (BinaryFunc)GET_OPTIMIZED(cvt32s32f), (BinaryFunc)cvt32s,
+            (BinaryFunc)GET_OPTIMIZED(cvt64f32f), 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvt8u64f), (BinaryFunc)GET_OPTIMIZED(cvt8s64f), (BinaryFunc)GET_OPTIMIZED(cvt16u64f),
+            (BinaryFunc)GET_OPTIMIZED(cvt16s64f), (BinaryFunc)GET_OPTIMIZED(cvt32s64f), (BinaryFunc)GET_OPTIMIZED(cvt32f64f),
+            (BinaryFunc)(cvt64s), 0
+        },
+        {
+            0, 0, 0, 0, 0, 0, 0, 0
+        }
+    };
+
     return cvtTab[CV_MAT_DEPTH(ddepth)][CV_MAT_DEPTH(sdepth)];
 }
 
 BinaryFunc getConvertScaleFunc(int sdepth, int ddepth)
 {
+    static BinaryFunc cvtScaleTab[][8] =
+    {
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvtScale8u), (BinaryFunc)GET_OPTIMIZED(cvtScale8s8u), (BinaryFunc)GET_OPTIMIZED(cvtScale16u8u),
+            (BinaryFunc)GET_OPTIMIZED(cvtScale16s8u), (BinaryFunc)GET_OPTIMIZED(cvtScale32s8u), (BinaryFunc)GET_OPTIMIZED(cvtScale32f8u),
+            (BinaryFunc)cvtScale64f8u, 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvtScale8u8s), (BinaryFunc)GET_OPTIMIZED(cvtScale8s), (BinaryFunc)GET_OPTIMIZED(cvtScale16u8s),
+            (BinaryFunc)GET_OPTIMIZED(cvtScale16s8s), (BinaryFunc)GET_OPTIMIZED(cvtScale32s8s), (BinaryFunc)GET_OPTIMIZED(cvtScale32f8s),
+            (BinaryFunc)cvtScale64f8s, 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvtScale8u16u), (BinaryFunc)GET_OPTIMIZED(cvtScale8s16u), (BinaryFunc)GET_OPTIMIZED(cvtScale16u),
+            (BinaryFunc)GET_OPTIMIZED(cvtScale16s16u), (BinaryFunc)GET_OPTIMIZED(cvtScale32s16u), (BinaryFunc)GET_OPTIMIZED(cvtScale32f16u),
+            (BinaryFunc)cvtScale64f16u, 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvtScale8u16s), (BinaryFunc)GET_OPTIMIZED(cvtScale8s16s), (BinaryFunc)GET_OPTIMIZED(cvtScale16u16s),
+            (BinaryFunc)GET_OPTIMIZED(cvtScale16s), (BinaryFunc)GET_OPTIMIZED(cvtScale32s16s), (BinaryFunc)GET_OPTIMIZED(cvtScale32f16s),
+            (BinaryFunc)cvtScale64f16s, 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvtScale8u32s), (BinaryFunc)GET_OPTIMIZED(cvtScale8s32s), (BinaryFunc)GET_OPTIMIZED(cvtScale16u32s),
+            (BinaryFunc)GET_OPTIMIZED(cvtScale16s32s), (BinaryFunc)GET_OPTIMIZED(cvtScale32s), (BinaryFunc)GET_OPTIMIZED(cvtScale32f32s),
+            (BinaryFunc)cvtScale64f32s, 0
+        },
+        {
+            (BinaryFunc)GET_OPTIMIZED(cvtScale8u32f), (BinaryFunc)GET_OPTIMIZED(cvtScale8s32f), (BinaryFunc)GET_OPTIMIZED(cvtScale16u32f),
+            (BinaryFunc)GET_OPTIMIZED(cvtScale16s32f), (BinaryFunc)GET_OPTIMIZED(cvtScale32s32f), (BinaryFunc)GET_OPTIMIZED(cvtScale32f),
+            (BinaryFunc)cvtScale64f32f, 0
+        },
+        {
+            (BinaryFunc)cvtScale8u64f, (BinaryFunc)cvtScale8s64f, (BinaryFunc)cvtScale16u64f,
+            (BinaryFunc)cvtScale16s64f, (BinaryFunc)cvtScale32s64f, (BinaryFunc)cvtScale32f64f,
+            (BinaryFunc)cvtScale64f, 0
+        },
+        {
+            0, 0, 0, 0, 0, 0, 0, 0
+        }
+    };
+
     return cvtScaleTab[CV_MAT_DEPTH(ddepth)][CV_MAT_DEPTH(sdepth)];
 }
 
@@ -1051,7 +1071,7 @@ void cv::convertScaleAbs( InputArray _src, OutputArray _dst, double alpha, doubl
     double scale[] = {alpha, beta};
     _dst.create( src.dims, src.size, CV_8UC(cn) );
     Mat dst = _dst.getMat();
-    BinaryFunc func = cvtScaleAbsTab[src.depth()];
+    BinaryFunc func = getCvtScaleAbsFunc(src.depth());
     CV_Assert( func != 0 );
 
     if( src.dims <= 2 )

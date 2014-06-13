@@ -9,10 +9,15 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS -Wmissing-declarations)
 add_subdirectory(15-puzzle)
 add_subdirectory(face-detection)
 add_subdirectory(image-manipulations)
+add_subdirectory(camera-calibration)
 add_subdirectory(color-blob-detection)
 add_subdirectory(tutorial-1-camerapreview)
 add_subdirectory(tutorial-2-mixedprocessing)
 add_subdirectory(tutorial-3-cameracontrol)
+
+if (HAVE_opencv_gpu)
+  add_subdirectory(tutorial-4-cuda)
+endif()
 
 add_subdirectory(native-activity)
 

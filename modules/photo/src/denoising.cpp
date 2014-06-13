@@ -133,7 +133,7 @@ static void fastNlMeansDenoisingMultiCheckPreconditions(
     {
         CV_Error(CV_StsBadArg,
             "imgToDenoiseIndex and temporalWindowSize "
-            "should be choosen corresponding srcImgs size!");
+            "should be chosen corresponding srcImgs size!");
     }
 
     for (int i = 1; i < src_imgs_size; i++) {
@@ -238,5 +238,3 @@ void cv::fastNlMeansDenoisingColoredMulti( InputArrayOfArrays _srcImgs, OutputAr
 
     cvtColor(dst_lab, dst, CV_Lab2LBGR);
 }
-
-

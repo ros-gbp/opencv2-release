@@ -20,7 +20,7 @@ Reads an image from a buffer in memory.
     :param buf: Input array or vector of bytes.
 
     :param flags: The same flags as in :ocv:func:`imread` .
-    
+
     :param dst: The optional output placeholder for the decoded matrix. It can save the image reallocations when the function is called repeatedly for images of the same size.
 
 The function reads an image from the specified buffer in the memory.
@@ -74,9 +74,9 @@ Loads an image from a file.
     :param filename: Name of file to be loaded.
 
     :param flags: Flags specifying the color type of a loaded image:
-    
+
         * CV_LOAD_IMAGE_ANYDEPTH - If set, return 16-bit/32-bit image when the input has the corresponding depth, otherwise convert it to 8-bit.
-        
+
         * CV_LOAD_IMAGE_COLOR - If set, always convert image to the color one
 
         * CV_LOAD_IMAGE_GRAYSCALE - If set, always convert image to the grayscale one
@@ -224,6 +224,15 @@ The class provides C++ API for capturing video from cameras or for reading video
 
 .. note:: In C API the black-box structure ``CvCapture`` is used instead of ``VideoCapture``.
 
+.. note::
+
+   * A basic sample on using the VideoCapture interface can be found at opencv_source_code/samples/cpp/starter_video.cpp
+   * Another basic video processing sample can be found at opencv_source_code/samples/cpp/video_dmtx.cpp
+
+   * (Python) A basic sample on using the VideoCapture interface can be found at opencv_source_code/samples/python2/video.py
+   * (Python) Another basic video processing sample can be found at opencv_source_code/samples/python2/video_dmtx.py
+   * (Python) A multi threaded video processing sample can be found at opencv_source_code/samples/python2/video_threaded.py
+
 
 VideoCapture::VideoCapture
 ------------------------------
@@ -244,7 +253,7 @@ VideoCapture constructors.
 .. ocv:cfunction:: CvCapture* cvCaptureFromFile( const char* filename )
 .. ocv:pyoldfunction:: cv.CaptureFromFile(filename) -> CvCapture
 
-    :param filename: name of the opened video file
+    :param filename: name of the opened video file (eg. video.avi) or image sequence (eg. img_%02d.jpg, which will read samples like img_00.jpg, img_01.jpg, img_02.jpg, ...)
 
     :param device: id of the opened video capturing device (i.e. a camera index). If there is a single camera connected, just pass 0.
 
@@ -261,7 +270,7 @@ Open video file or a capturing device for video capturing
 .. ocv:pyfunction:: cv2.VideoCapture.open(filename) -> retval
 .. ocv:pyfunction:: cv2.VideoCapture.open(device) -> retval
 
-    :param filename: name of the opened video file
+    :param filename: name of the opened video file (eg. video.avi) or image sequence (eg. img_%02d.jpg, which will read samples like img_00.jpg, img_01.jpg, img_02.jpg, ...)
 
     :param device: id of the opened video capturing device (i.e. a camera index).
 
@@ -309,7 +318,7 @@ The methods/functions grab the next frame from video file or camera and return t
 
 The primary use of the function is in multi-camera environments, especially when the cameras do not have hardware synchronization. That is, you call ``VideoCapture::grab()`` for each camera and after that call the slower method ``VideoCapture::retrieve()`` to decode and get frame from each camera. This way the overhead on demosaicing or motion jpeg decompression etc. is eliminated and the retrieved frames from different cameras will be closer in time.
 
-Also, when a connected camera is multi-head (for example, a stereo camera or a Kinect device), the correct way of retrieving data from it is to call `VideoCapture::grab` first and then call :ocv:func:`VideoCapture::retrieve` one or more times with different values of the ``channel`` parameter. See http://code.opencv.org/projects/opencv/repository/revisions/master/entry/samples/cpp/kinect_maps.cpp
+Also, when a connected camera is multi-head (for example, a stereo camera or a Kinect device), the correct way of retrieving data from it is to call `VideoCapture::grab` first and then call :ocv:func:`VideoCapture::retrieve` one or more times with different values of the ``channel`` parameter. See https://github.com/Itseez/opencv/tree/master/samples/cpp/openni_capture.cpp
 
 
 VideoCapture::retrieve
@@ -487,7 +496,7 @@ VideoWriter constructors
 
     :param filename: Name of the output video file.
 
-    :param fourcc: 4-character code of codec used to compress the frames. For example, ``CV_FOURCC('P','I','M,'1')``  is a MPEG-1 codec, ``CV_FOURCC('M','J','P','G')``  is a motion-jpeg codec etc. List of codes can be obtained at `Video Codecs by FOURCC <http://www.fourcc.org/codecs.php>`_ page.
+    :param fourcc: 4-character code of codec used to compress the frames. For example, ``CV_FOURCC('P','I','M','1')``  is a MPEG-1 codec, ``CV_FOURCC('M','J','P','G')``  is a motion-jpeg codec etc. List of codes can be obtained at `Video Codecs by FOURCC <http://www.fourcc.org/codecs.php>`_ page.
 
     :param fps: Framerate of the created video stream.
 
@@ -546,4 +555,3 @@ Writes the next video frame
     :param image: The written frame
 
 The functions/methods write the specified image to video file. It must have the same size as has been specified when opening the video writer.
-

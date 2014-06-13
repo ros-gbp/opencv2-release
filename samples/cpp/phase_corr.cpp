@@ -13,7 +13,7 @@ int main(int, char* [])
     do
     {
         video >> frame;
-        cvtColor(frame, curr, CV_RGB2GRAY);
+        cvtColor(frame, curr, COLOR_RGB2GRAY);
 
         if(prev.empty())
         {
@@ -43,7 +43,3 @@ int main(int, char* [])
 
     return 0;
 }
-
-
-
-
