@@ -83,4 +83,5 @@ configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/opencv-XXX.pc.in"
 
 if(UNIX AND NOT ANDROID)
   install(FILES ${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME} DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig COMPONENT dev)
+  install(FILES ${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME} DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig RENAME opencv.pc COMPONENT dev)
 endif()
