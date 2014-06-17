@@ -1,7 +1,7 @@
-From 5730e4ca75073cb83f2f4eec1a4a9cb6228b23de Mon Sep 17 00:00:00 2001
+From 430d07d33168019ec38f56ca966ca2937e373a29 Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vincent.rabaud@gmail.com>
 Date: Sat, 14 Jun 2014 00:04:12 +0200
-Subject: [PATCH 4/4] do not use OpenCL for Oneiric
+Subject: [PATCH 4/6] do not use OpenCL for Oneiric
 
 ---
  CMakeLists.txt | 6 +++---
