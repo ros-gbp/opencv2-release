@@ -1,0 +1,22 @@
+From 44fa4bf988bdd634656da2d977833adc19c26efc Mon Sep 17 00:00:00 2001
+From: Vincent Rabaud <vincent.rabaud@gmail.com>
+Date: Tue, 17 Jun 2014 12:41:02 +0200
+Subject: [PATCH 4/5] also add a opencv.pc for bc
+
+---
+ cmake/OpenCVGenPkgconfig.cmake | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/cmake/OpenCVGenPkgconfig.cmake b/cmake/OpenCVGenPkgconfig.cmake
+index f2c7ade..8e9e7d6 100644
+--- a/cmake/OpenCVGenPkgconfig.cmake
++++ b/cmake/OpenCVGenPkgconfig.cmake
+@@ -83,4 +83,5 @@ configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/opencv-XXX.pc.in"
+ 
+ if(UNIX AND NOT ANDROID)
+   install(FILES ${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME} DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig COMPONENT dev)
++  install(FILES ${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME} DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig RENAME opencv.pc COMPONENT dev)
+ endif()
+-- 
+1.9.1
+

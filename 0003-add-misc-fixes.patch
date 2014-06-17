@@ -1,7 +1,7 @@
-From 68e47603057cee8f9b67756848e0c422e95878fa Mon Sep 17 00:00:00 2001
+From 3952af0f0e83f9715ce550b750bf130e592f599a Mon Sep 17 00:00:00 2001
 From: Vincent Rabaud <vincent.rabaud@gmail.com>
 Date: Fri, 13 Jun 2014 18:55:59 +0200
-Subject: [PATCH 3/3] add misc fixes
+Subject: [PATCH 3/5] add misc fixes
 
 ---
  cmake/OpenCVGenPkgconfig.cmake        | 1 +
